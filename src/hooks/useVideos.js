@@ -18,7 +18,8 @@ export function useFeedVideos() {
     {
       getNextPageParam: (last) => last.nextPage ?? undefined,
       initialData: { pages: [MOCK_PAGE], pageParams: [undefined] },
-      staleTime: 0,
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
     },
   )
 }

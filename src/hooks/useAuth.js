@@ -90,8 +90,8 @@ export function useUpdateUser() {
       () => Promise.resolve(data),   // offline: sólo actualiza el store local
     ),
     {
-      onSuccess: (updated) => {
-        updateUser(updated)
+      onSuccess: (updated, variables) => {
+        updateUser({ ...variables, ...updated })
         toast.success('Cambios guardados')
       },
       onError: (err) => {
