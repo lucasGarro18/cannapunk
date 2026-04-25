@@ -4,7 +4,8 @@ import {
   RiArrowLeftLine, RiSendPlane2Line, RiSearchLine,
   RiMessage3Line, RiCheckLine, RiCheckDoubleLine,
   RiAttachment2, RiEmotionLine, RiCloseLine,
-  RiFileTextLine, RiDownloadLine, RiImageLine, RiLoader4Line,
+  RiFileTextLine, RiDownloadLine, RiLoader4Line,
+  RiArrowDownLine, RiDeleteBinLine, RiAddLine,
 } from 'react-icons/ri'
 import { motion, AnimatePresence } from 'framer-motion'
 import Avatar from '@/components/ui/Avatar'
@@ -13,7 +14,7 @@ import { useAuthStore } from '@/store/authStore'
 import { useChatStore } from '@/store/chatStore'
 import {
   useConversations, useMessages, useConversationSocket,
-  useStartConversation,
+  useStartConversation, useDeleteMessage, useSearchUsers,
 } from '@/hooks/useChat'
 import { chatApi } from '@/services/api'
 import { useQueryClient } from 'react-query'
@@ -114,35 +115,140 @@ function BubbleContent({ parsed, isMe, onImageClick }) {
   return <p className="text-sm leading-relaxed break-words whitespace-pre-wrap" style={{ color: textColor }}>{parsed.text}</p>
 }
 
+// ── NewConvModal ──────────────────────────────────────────────
+function NewConvModal({ onClose, onStart }) {
+  const [q, setQ] = useState('')
+  const { data: results = [], isLoading } = useSearchUsers(q)
+  const inputRef = useRef(null)
+
+  useEffect(() => { inputRef.current?.focus() }, [])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+        className="w-full max-w-sm rounded-2xl overflow-hidden"
+        style={{ background: '#0d0d12', border: '1px solid rgba(255,255,255,0.07)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Search input */}
+        <div className="flex items-center gap-3 px-4 py-3.5"
+             style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <RiSearchLine size={15} style={{ color: '#3d3d46', flexShrink: 0 }} />
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="Buscar por nombre o @usuario..."
+            className="flex-1 bg-transparent text-sm outline-none"
+            style={{ color: '#f0f0f5' }}
+          />
+          <button onClick={onClose} className="btn-icon w-7 h-7 flex-shrink-0">
+            <RiCloseLine size={14} />
+          </button>
+        </div>
+
+        {/* Results */}
+        <div className="max-h-72 overflow-y-auto">
+          {q.trim().length < 2 && (
+            <p className="text-center py-10 text-xs" style={{ color: '#3d3d46' }}>
+              Escribí al menos 2 caracteres
+            </p>
+          )}
+          {q.trim().length >= 2 && isLoading && (
+            <div className="flex justify-center py-10">
+              <RiLoader4Line size={20} className="animate-spin" style={{ color: '#3d3d46' }} />
+            </div>
+          )}
+          {results.map(u => (
+            <button
+              key={u.id}
+              onClick={() => { onStart(u.id); onClose() }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/3"
+            >
+              <Avatar src={u.avatar} name={u.name} size="sm" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{u.name}</p>
+                <p className="text-xs truncate" style={{ color: '#52525b' }}>@{u.username}</p>
+              </div>
+              <RiMessage3Line size={14} style={{ color: '#3d3d46' }} />
+            </button>
+          ))}
+          {q.trim().length >= 2 && !isLoading && results.length === 0 && (
+            <p className="text-center py-10 text-xs" style={{ color: '#3d3d46' }}>Sin resultados</p>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 // ── ConversationView ──────────────────────────────────────────
 function ConversationView({ conv, onBack }) {
-  const { user }                          = useAuthStore()
-  const qc                                = useQueryClient()
-  const { drafts, setDraft, clearDraft }  = useChatStore()
+  const { user }                         = useAuthStore()
+  const qc                               = useQueryClient()
+  const { drafts, setDraft, clearDraft } = useChatStore()
+  const onlineUsers                      = useChatStore(s => s.onlineUsers)
 
-  const [text, setText]           = useState(drafts[conv.id] ?? '')
-  const [messages, setMessages]   = useState([])
-  const [typing, setTyping]       = useState(false)
-  const [showEmoji, setShowEmoji] = useState(false)
-  const [attachment, setAttachment] = useState(null)   // { url, name, mime, size, preview, uploading }
-  const [lightbox, setLightbox]   = useState(null)
+  const [text, setText]             = useState(drafts[conv.id] ?? '')
+  const [messages, setMessages]     = useState([])
+  const [typing, setTyping]         = useState(false)
+  const [showEmoji, setShowEmoji]   = useState(false)
+  const [attachment, setAttachment] = useState(null)
+  const [lightbox, setLightbox]     = useState(null)
+  const [isAtBottom, setIsAtBottom] = useState(true)
+  const [hasMore, setHasMore]       = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [oldestId, setOldestId]     = useState(null)
 
-  const bottomRef    = useRef(null)
-  const typingTimer  = useRef(null)
-  const fileInputRef = useRef(null)
-  const textareaRef  = useRef(null)
+  const bottomRef          = useRef(null)
+  const messagesContainerRef = useRef(null)
+  const typingTimer        = useRef(null)
+  const fileInputRef       = useRef(null)
+  const textareaRef        = useRef(null)
+  const initialLoaded      = useRef(false)
 
-  const { data: initial = [] } = useMessages(conv.id)
+  const { data: initial = [] }       = useMessages(conv.id)
+  const { mutate: doDelete }         = useDeleteMessage()
 
+  const other    = conv.participants?.find(p => p.userId !== user?.id)?.user
+  const isOnline = onlineUsers.includes(other?.id)
+
+  // Reset on conversation change
   useEffect(() => {
-    setMessages(initial)
+    setMessages([])
+    setOldestId(null)
+    setHasMore(false)
+    setIsAtBottom(true)
+    initialLoaded.current = false
     chatApi.markRead(conv.id).catch(() => {})
     qc.invalidateQueries(['conversations'])
-  }, [initial, conv.id, qc])
+  }, [conv.id, qc])
+
+  // Set messages on first load (not on every refetch)
+  useEffect(() => {
+    if (initial.length > 0 && !initialLoaded.current) {
+      initialLoaded.current = true
+      setMessages(initial)
+      setOldestId(initial[0]?.id ?? null)
+      setHasMore(initial.length >= 40)
+    }
+  }, [initial])
 
   const onNewMessage = useCallback((msg) => {
     if (msg.__typing)     { setTyping(true);  return }
     if (msg.__stopTyping) { setTyping(false); return }
+    if (msg.__deleted) {
+      setMessages(prev => prev.filter(m => m.id !== msg.messageId))
+      return
+    }
 
     setMessages(prev => {
       const idx = prev.findIndex(
@@ -159,11 +265,40 @@ function ConversationView({ conv, onBack }) {
 
   const { sendMessage, sendTyping, stopTyping } = useConversationSocket(conv.id, onNewMessage)
 
+  // Auto-scroll solo cuando el usuario está cerca del fondo
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, typing])
+    if (isAtBottom) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages, typing, isAtBottom])
 
-  const other = conv.participants?.find(p => p.userId !== user?.id)?.user
+  // ── Load more (mensajes anteriores) ──────────────────────────
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || !oldestId) return
+    const container = messagesContainerRef.current
+    const prevScrollHeight = container?.scrollHeight ?? 0
+    setLoadingMore(true)
+    try {
+      const older = await chatApi.getMessages(conv.id, oldestId)
+      if (older.length === 0) { setHasMore(false); return }
+      setMessages(prev => [...older, ...prev])
+      setOldestId(older[0]?.id ?? null)
+      setHasMore(older.length >= 40)
+      // Mantener posición de scroll al agregar mensajes arriba
+      requestAnimationFrame(() => {
+        if (container) container.scrollTop = container.scrollHeight - prevScrollHeight
+      })
+    } catch { /* silencioso */ }
+    finally { setLoadingMore(false) }
+  }, [loadingMore, hasMore, oldestId, conv.id])
+
+  const handleContainerScroll = useCallback(() => {
+    const el = messagesContainerRef.current
+    if (!el) return
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
+    setIsAtBottom(nearBottom)
+    if (el.scrollTop < 80 && hasMore && !loadingMore) loadMore()
+  }, [hasMore, loadingMore, loadMore])
 
   // ── Input handlers ────────────────────────────────────────
 
@@ -174,33 +309,28 @@ function ConversationView({ conv, onBack }) {
     sendTyping()
     clearTimeout(typingTimer.current)
     typingTimer.current = setTimeout(stopTyping, 1500)
-    // Auto-resize
     e.target.style.height = 'auto'
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
   }
 
   const handleEmojiSelect = (emoji) => {
-    const el   = textareaRef.current
-    const pos  = el?.selectionStart ?? text.length
+    const el  = textareaRef.current
+    const pos = el?.selectionStart ?? text.length
     const next = text.slice(0, pos) + emoji + text.slice(pos)
     setText(next)
     setDraft(conv.id, next)
     setShowEmoji(false)
     el?.focus()
-    setTimeout(() => {
-      el?.setSelectionRange(pos + emoji.length, pos + emoji.length)
-    }, 0)
+    setTimeout(() => { el?.setSelectionRange(pos + emoji.length, pos + emoji.length) }, 0)
   }
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = ''
-
     const isImg = file.type.startsWith('image/')
     const preview = isImg ? URL.createObjectURL(file) : null
     setAttachment({ uploading: true, name: file.name, mime: file.type, preview })
-
     try {
       const result = await chatApi.uploadAttachment(file)
       setAttachment({ ...result, preview, uploading: false })
@@ -245,19 +375,26 @@ function ConversationView({ conv, onBack }) {
       _pending:  true,
     }
     setMessages(prev => [...prev, optimistic])
+    setIsAtBottom(true)
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
 
     sendMessage(content)
     setText('')
     removeAttachment()
     clearDraft(conv.id)
     stopTyping()
-
-    // Reset textarea height
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
   }
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
+  }
+
+  const handleDelete = (msgId) => {
+    setMessages(prev => prev.filter(m => m.id !== msgId))
+    doDelete(msgId, {
+      onError: () => qc.invalidateQueries(['messages', conv.id]),
+    })
   }
 
   const canSend = (text.trim().length > 0 || !!attachment) && !attachment?.uploading
@@ -289,12 +426,12 @@ function ConversationView({ conv, onBack }) {
             <div className="relative">
               <Avatar src={other.avatar} name={other.name} size="sm" />
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
-                    style={{ background: '#00e676', borderColor: '#0a0a0e' }} />
+                    style={{ background: isOnline ? '#00e676' : '#3d3d46', borderColor: '#0a0a0e' }} />
             </div>
             <div className="min-w-0">
               <p className="font-semibold text-sm truncate text-white">{other.name}</p>
-              <p className="text-[11px] truncate" style={{ color: typing ? '#00e676' : '#52525b' }}>
-                {typing ? 'escribiendo...' : `@${other.username}`}
+              <p className="text-[11px] truncate" style={{ color: typing ? '#00e676' : isOnline ? '#22c55e' : '#52525b' }}>
+                {typing ? 'escribiendo...' : isOnline ? 'en línea' : `@${other.username}`}
               </p>
             </div>
           </Link>
@@ -302,8 +439,27 @@ function ConversationView({ conv, onBack }) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-[3px]"
-           style={{ background: '#0b0b0f' }}>
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleContainerScroll}
+        className="flex-1 overflow-y-auto px-3 py-4 space-y-[3px]"
+        style={{ background: '#0b0b0f' }}
+      >
+        {/* Load more */}
+        {loadingMore && (
+          <div className="flex justify-center py-3">
+            <RiLoader4Line size={16} className="animate-spin" style={{ color: '#3d3d46' }} />
+          </div>
+        )}
+        {hasMore && !loadingMore && messages.length > 0 && (
+          <button
+            onClick={loadMore}
+            className="w-full py-2 text-[11px] text-center transition-colors hover:text-gray-400"
+            style={{ color: '#3d3d46' }}
+          >
+            Cargar mensajes anteriores
+          </button>
+        )}
 
         {messages.length === 0 && !typing && (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
@@ -325,20 +481,19 @@ function ConversationView({ conv, onBack }) {
             )
 
             const { msg } = row
-            const isMe       = msg.senderId === user?.id
-            const msgIdx     = messages.findIndex(m => m.id === msg.id)
-            const prev       = messages[msgIdx - 1]
-            const next       = messages[msgIdx + 1]
-            const isFirst    = !prev || prev.senderId !== msg.senderId || !isSameDay(prev.createdAt, msg.createdAt)
-            const isLast     = !next || next.senderId !== msg.senderId || !isSameDay(next.createdAt, msg.createdAt)
-            const parsed     = parseContent(msg.content)
-            const isMedia    = parsed.type !== 'text'
+            const isMe    = msg.senderId === user?.id
+            const msgIdx  = messages.findIndex(m => m.id === msg.id)
+            const prev    = messages[msgIdx - 1]
+            const next    = messages[msgIdx + 1]
+            const isFirst = !prev || prev.senderId !== msg.senderId || !isSameDay(prev.createdAt, msg.createdAt)
+            const isLast  = !next || next.senderId !== msg.senderId || !isSameDay(next.createdAt, msg.createdAt)
+            const parsed  = parseContent(msg.content)
+            const isMedia = parsed.type !== 'text'
 
-            // Bubble shape per position in group
-            const ownBR  = isLast  ? '4px'  : '18px'
-            const otherBL = isLast ? '4px'  : '18px'
-            const ownBL  = isFirst ? '18px' : '6px'
-            const otherBR = isFirst? '18px' : '6px'
+            const ownBR   = isLast  ? '4px'  : '18px'
+            const otherBL = isLast  ? '4px'  : '18px'
+            const ownBL   = isFirst ? '18px' : '6px'
+            const otherBR = isFirst ? '18px' : '6px'
 
             return (
               <motion.div key={msg.id}
@@ -350,7 +505,6 @@ function ConversationView({ conv, onBack }) {
                 className={clsx('flex items-end gap-1.5', isMe ? 'justify-end pl-10' : 'justify-start pr-10')}
                 style={{ marginBottom: isLast ? 6 : 2 }}>
 
-                {/* Avatar (other only, first in group) */}
                 {!isMe && (
                   <div className="w-6 flex-shrink-0 self-end mb-0.5">
                     {isLast && <Avatar src={msg.sender?.avatar} name={msg.sender?.name} size="xs" />}
@@ -358,7 +512,6 @@ function ConversationView({ conv, onBack }) {
                 )}
 
                 <div className={clsx('flex flex-col gap-0.5', isMe ? 'items-end' : 'items-start')}>
-                  {/* Sender name (other, first in group) */}
                   {!isMe && isFirst && (
                     <p className="text-[10px] font-medium ml-1" style={{ color: '#52525b' }}>
                       {msg.sender?.name ?? other?.name}
@@ -372,27 +525,36 @@ function ConversationView({ conv, onBack }) {
                       ? {
                           background: isMe ? 'linear-gradient(145deg,#00e676,#00c853)' : '#1c1c26',
                           border: isMe ? 'none' : '1px solid rgba(255,255,255,0.05)',
-                          borderRadius: isMe
-                            ? `18px ${ownBL} ${ownBR} 18px`
-                            : `${otherBR} 18px 18px ${otherBL}`,
+                          borderRadius: isMe ? `18px ${ownBL} ${ownBR} 18px` : `${otherBR} 18px 18px ${otherBL}`,
                           padding: '6px',
                           maxWidth: 240,
                         }
                       : {
                           background: isMe ? 'linear-gradient(145deg,#00e676,#00c853)' : '#1c1c26',
                           border: isMe ? 'none' : '1px solid rgba(255,255,255,0.05)',
-                          borderRadius: isMe
-                            ? `18px ${ownBL} ${ownBR} 18px`
-                            : `${otherBR} 18px 18px ${otherBL}`,
+                          borderRadius: isMe ? `18px ${ownBL} ${ownBR} 18px` : `${otherBR} 18px 18px ${otherBL}`,
                           padding: '10px 13px',
                           maxWidth: 320,
                         }
                     }
                   >
                     <BubbleContent parsed={parsed} isMe={isMe} onImageClick={setLightbox} />
+
+                    {/* Botón eliminar — solo mensajes propios, hover en desktop */}
+                    {isMe && !msg._pending && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(msg.id) }}
+                        className="absolute opacity-0 group-hover:opacity-100 transition-opacity
+                                   -left-7 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full
+                                   flex items-center justify-center"
+                        style={{ background: '#1c1c26', border: '1px solid rgba(255,255,255,0.07)' }}
+                        title="Eliminar mensaje"
+                      >
+                        <RiDeleteBinLine size={10} style={{ color: '#71717a' }} />
+                      </button>
+                    )}
                   </div>
 
-                  {/* Timestamp + status */}
                   {isLast && (
                     <div className="flex items-center gap-1 px-1">
                       <span className="text-[10px]" style={{ color: '#3d3d46' }}>
@@ -435,6 +597,23 @@ function ConversationView({ conv, onBack }) {
 
         <div ref={bottomRef} />
       </div>
+
+      {/* Scroll-to-bottom button */}
+      <AnimatePresence>
+        {!isAtBottom && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); setIsAtBottom(true) }}
+            className="absolute bottom-[4.5rem] right-3 z-20 w-9 h-9 rounded-full flex items-center justify-center shadow-lg"
+            style={{ background: '#1c1c26', border: '1px solid rgba(0,230,118,0.25)' }}
+          >
+            <RiArrowDownLine size={16} style={{ color: '#00e676' }} />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Attachment preview */}
       <AnimatePresence>
@@ -483,7 +662,6 @@ function ConversationView({ conv, onBack }) {
         </AnimatePresence>
 
         <form onSubmit={handleSend} className="flex items-end gap-2">
-          {/* Attach */}
           <motion.button type="button" whileTap={{ scale: 0.88 }}
                          onClick={() => fileInputRef.current?.click()}
                          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors"
@@ -494,7 +672,6 @@ function ConversationView({ conv, onBack }) {
                  accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
                  onChange={handleFileSelect} />
 
-          {/* Textarea */}
           <div className="flex-1 relative flex items-end"
                style={{ background: '#1a1a24', borderRadius: 20, border: '1px solid rgba(255,255,255,0.07)' }}>
             <textarea
@@ -505,10 +682,8 @@ function ConversationView({ conv, onBack }) {
               placeholder="Mensaje..."
               rows={1}
               className="flex-1 resize-none bg-transparent px-4 py-2.5 text-sm outline-none"
-              style={{ color: '#f0f0f5', maxHeight: 120, lineHeight: '1.5',
-                       '::placeholder': { color: '#3d3d46' } }}
+              style={{ color: '#f0f0f5', maxHeight: 120, lineHeight: '1.5' }}
             />
-            {/* Emoji button inside textarea */}
             <motion.button type="button" whileTap={{ scale: 0.85 }}
                            onClick={() => setShowEmoji(v => !v)}
                            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mr-1 mb-1 transition-colors"
@@ -517,7 +692,6 @@ function ConversationView({ conv, onBack }) {
             </motion.button>
           </div>
 
-          {/* Send */}
           <motion.button
             type="submit"
             disabled={!canSend}
@@ -563,8 +737,10 @@ function ConversationView({ conv, onBack }) {
 const convStagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } }
 const convItem    = { hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0, transition: { duration: 0.2 } } }
 
-function ConvList({ conversations, activeId, onSelect, userId }) {
-  const [filter, setFilter] = useState('')
+function ConvList({ conversations, activeId, onSelect, userId, onNewConv }) {
+  const [filter, setFilter]       = useState('')
+  const [showCompose, setShowCompose] = useState(false)
+
   const filtered = conversations.filter(c => {
     const other = c.participants?.find(p => p.userId !== userId)?.user
     return !filter
@@ -576,7 +752,16 @@ function ConvList({ conversations, activeId, onSelect, userId }) {
     <div className="flex flex-col h-full" style={{ background: '#0d0d12' }}>
       <div className="px-4 pt-5 pb-3 flex-shrink-0"
            style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <h1 className="text-xl font-bold mb-3 text-white">Mensajes</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-bold text-white">Mensajes</h1>
+          <button
+            onClick={() => setShowCompose(true)}
+            className="btn-icon w-8 h-8"
+            title="Nuevo mensaje"
+          >
+            <RiAddLine size={18} />
+          </button>
+        </div>
         <div className="relative">
           <RiSearchLine className="absolute left-3 top-1/2 -translate-y-1/2" size={14}
                         style={{ color: '#3d3d46' }} />
@@ -595,6 +780,14 @@ function ConvList({ conversations, activeId, onSelect, userId }) {
             <p className="text-sm" style={{ color: '#3d3d46' }}>
               {filter ? 'Sin resultados' : 'Aún no tenés conversaciones'}
             </p>
+            {!filter && (
+              <button
+                onClick={() => setShowCompose(true)}
+                className="btn-primary text-xs py-2 px-4 mt-4"
+              >
+                Empezar un chat
+              </button>
+            )}
           </div>
         )}
 
@@ -651,6 +844,15 @@ function ConvList({ conversations, activeId, onSelect, userId }) {
           })}
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {showCompose && (
+          <NewConvModal
+            onClose={() => setShowCompose(false)}
+            onStart={(userId) => { onNewConv(userId); setShowCompose(false) }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -695,6 +897,17 @@ export default function ChatPage() {
     qc.invalidateQueries(['conversations'])
   }
 
+  const handleNewConv = (withUserId) => {
+    const existing = convs.find(c => c.participants?.some(p => p.userId === withUserId))
+    if (existing) {
+      handleSelect(existing)
+    } else {
+      startConv(withUserId, {
+        onSuccess: (conv) => { setActiveConv(conv); setMobileView('chat') },
+      })
+    }
+  }
+
   return (
     <div className="max-w-5xl mx-auto h-[calc(100vh-3.5rem)] flex"
          style={{ borderLeft: '1px solid rgba(255,255,255,0.05)', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
@@ -703,12 +916,17 @@ export default function ChatPage() {
       <div className={clsx('w-full md:w-72 flex-shrink-0 flex flex-col md:border-r',
                             mobileView === 'chat' ? 'hidden md:flex' : 'flex')}
            style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-        <ConvList conversations={convs} activeId={activeConv?.id}
-                  onSelect={handleSelect} userId={user?.id} />
+        <ConvList
+          conversations={convs}
+          activeId={activeConv?.id}
+          onSelect={handleSelect}
+          userId={user?.id}
+          onNewConv={handleNewConv}
+        />
       </div>
 
       {/* Conversation panel */}
-      <div className={clsx('flex-1 flex flex-col', mobileView === 'list' ? 'hidden md:flex' : 'flex')}>
+      <div className={clsx('flex-1 flex flex-col relative', mobileView === 'list' ? 'hidden md:flex' : 'flex')}>
         {activeConv ? (
           <ConversationView conv={activeConv} onBack={() => setMobileView('list')} />
         ) : (
@@ -725,7 +943,7 @@ export default function ChatPage() {
             <div>
               <p className="font-semibold text-gray-300">Tus mensajes</p>
               <p className="text-sm mt-1" style={{ color: '#3d3d46' }}>
-                Seleccioná una conversación o escribile a alguien desde su perfil
+                Seleccioná una conversación o iniciá un nuevo chat
               </p>
             </div>
           </motion.div>

@@ -4,7 +4,6 @@ import { persist } from 'zustand/middleware'
 export const useChatStore = create(
   persist(
     (set) => ({
-      // Borradores por conversación — persisten al navegar
       drafts: {},
 
       setDraft: (convId, text) => set(state => ({
@@ -16,6 +15,16 @@ export const useChatStore = create(
         delete d[convId]
         return { drafts: d }
       }),
+
+      // Presencia online — no se persiste (ver partialize)
+      onlineUsers: [],
+      setOnline:      (userId)  => set(s => ({
+        onlineUsers: s.onlineUsers.includes(userId) ? s.onlineUsers : [...s.onlineUsers, userId],
+      })),
+      setOffline:     (userId)  => set(s => ({
+        onlineUsers: s.onlineUsers.filter(id => id !== userId),
+      })),
+      setOnlineUsers: (userIds) => set({ onlineUsers: userIds }),
     }),
     {
       name: 'cannapunk-chat',

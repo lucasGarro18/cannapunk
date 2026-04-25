@@ -142,4 +142,24 @@ router.patch('/conversations/:id/read', requireAuth, async (req, res) => {
   res.json({ ok: true })
 })
 
+// DELETE /api/chat/messages/:id — eliminar mensaje propio
+router.delete('/messages/:id', requireAuth, async (req, res) => {
+  const message = await prisma.message.findUnique({ where: { id: req.params.id } })
+  if (!message) return res.status(404).json({ error: 'Mensaje no encontrado' })
+  if (message.senderId !== req.user.id) return res.status(403).json({ error: 'Sin permiso' })
+
+  await prisma.message.delete({ where: { id: req.params.id } })
+  await prisma.conversation.update({
+    where: { id: message.conversationId },
+    data:  { updatedAt: new Date() },
+  })
+
+  ioModule.emit(`conv:${message.conversationId}`, 'message_deleted', {
+    messageId:      req.params.id,
+    conversationId: message.conversationId,
+  })
+
+  res.json({ ok: true })
+})
+
 module.exports = router

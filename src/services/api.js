@@ -35,6 +35,7 @@ export const authApi = {
   changePassword:  (currentPwd, newPwd)   => http.patch('/auth/me/password',   { currentPwd, newPwd }),
   resetRequest:    (email)               => http.post('/auth/reset-request',   { email }),
   resetConfirm:    (token, password)     => http.post('/auth/reset-confirm',   { token, password }),
+  searchUsers:     (q)                   => http.get('/auth/users',             { params: { q } }),
   uploadAvatar: (file) => {
     const fd = new FormData()
     fd.append('avatar', file)
@@ -109,9 +110,10 @@ export const ordersApi = {
 export const chatApi = {
   getConversations:  ()                   => http.get('/chat/conversations'),
   startConversation: (userId)             => http.post('/chat/conversations', { userId }),
-  getMessages:       (convId, cursor)     => http.get(`/chat/conversations/${convId}/messages`, { params: { cursor } }),
+  getMessages:       (convId, cursor)     => http.get(`/chat/conversations/${convId}/messages`, { params: { cursor, limit: 40 } }),
   markRead:          (convId)             => http.patch(`/chat/conversations/${convId}/read`),
   sendMessage:       (convId, content)    => http.post(`/chat/conversations/${convId}/messages`, { content }),
+  deleteMessage:     (msgId)             => http.delete(`/chat/messages/${msgId}`),
   uploadAttachment:  (file)              => {
     const fd = new FormData()
     fd.append('file', file)

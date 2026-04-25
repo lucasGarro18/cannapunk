@@ -66,6 +66,9 @@ const io = new Server(server, {
 })
 ioModule.set(io)
 
+// userId → cantidad de sockets conectados (para múltiples tabs)
+const onlineUsers = new Map()
+
 // Middleware de auth para sockets
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token
@@ -81,8 +84,14 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
   const userId = socket.user.id
 
-  // Unirse a sala personal para recibir mensajes
+  // Sala personal
   socket.join(`user:${userId}`)
+
+  // Presencia online
+  const prevCount = onlineUsers.get(userId) ?? 0
+  onlineUsers.set(userId, prevCount + 1)
+  if (prevCount === 0) socket.broadcast.emit('user_online', { userId })
+  socket.emit('online_users', Array.from(onlineUsers.keys()))
 
   socket.on('join_conversation', (conversationId) => {
     socket.join(`conv:${conversationId}`)
@@ -95,7 +104,6 @@ io.on('connection', (socket) => {
   socket.on('send_message', async ({ conversationId, content }) => {
     if (!content?.trim() || !conversationId) return
 
-    // Verificar que el usuario es participante
     const participant = await prisma.conversationParticipant.findUnique({
       where: { conversationId_userId: { conversationId, userId } },
     }).catch(() => null)
@@ -106,16 +114,13 @@ io.on('connection', (socket) => {
       include: { sender: { select: { id: true, name: true, username: true, avatar: true } } },
     })
 
-    // Actualizar updatedAt de la conversación
     await prisma.conversation.update({
       where: { id: conversationId },
       data:  { updatedAt: new Date() },
     })
 
-    // Emitir a todos en la sala
     io.to(`conv:${conversationId}`).emit('new_message', message)
 
-    // Notificar a participantes que no están en la sala (badge)
     const participants = await prisma.conversationParticipant.findMany({
       where: { conversationId, userId: { not: userId } },
     })
@@ -130,6 +135,16 @@ io.on('connection', (socket) => {
 
   socket.on('stop_typing', ({ conversationId }) => {
     socket.to(`conv:${conversationId}`).emit('stop_typing', { userId, conversationId })
+  })
+
+  socket.on('disconnect', () => {
+    const n = (onlineUsers.get(userId) ?? 1) - 1
+    if (n <= 0) {
+      onlineUsers.delete(userId)
+      io.emit('user_offline', { userId })
+    } else {
+      onlineUsers.set(userId, n)
+    }
   })
 })
 

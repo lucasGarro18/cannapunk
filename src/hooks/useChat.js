@@ -1,8 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { io } from 'socket.io-client'
-import { chatApi } from '@/services/api'
+import { chatApi, authApi } from '@/services/api'
 import { useAuthStore } from '@/store/authStore'
+import { useChatStore } from '@/store/chatStore'
 import { useNotifStore } from '@/store/notifStore'
 import { mockCreators } from '@/data/mockData'
 import toast from 'react-hot-toast'
@@ -63,6 +64,7 @@ export function useChatSocket() {
   const token     = useAuthStore(s => s.token)
   const qc        = useQueryClient()
   const addNotif  = useNotifStore(s => s.addNotif)
+  const { setOnline, setOffline, setOnlineUsers } = useChatStore()
   const socketRef = useRef(null)
 
   useEffect(() => {
@@ -85,11 +87,18 @@ export function useChatSocket() {
       })
     })
 
+    socket.on('user_online',   ({ userId }) => setOnline(userId))
+    socket.on('user_offline',  ({ userId }) => setOffline(userId))
+    socket.on('online_users',  (userIds)   => setOnlineUsers(userIds))
+
     return () => {
       socket.off('conversation_updated')
       socket.off('new_notification')
+      socket.off('user_online')
+      socket.off('user_offline')
+      socket.off('online_users')
     }
-  }, [token, qc, addNotif])
+  }, [token, qc, addNotif, setOnline, setOffline, setOnlineUsers])
 
   return socketRef
 }
@@ -167,7 +176,44 @@ export function useMessages(conversationId) {
         throw err
       }
     },
-    { enabled: !!conversationId, staleTime: 0 },
+    {
+      enabled: !!conversationId,
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+    },
+  )
+}
+
+export function useDeleteMessage() {
+  return useMutation(
+    (msgId) => chatApi.deleteMessage(msgId).catch(err => {
+      if (!err.response) return { ok: true }
+      throw err
+    }),
+    { onError: () => toast.error('No se pudo eliminar el mensaje') },
+  )
+}
+
+export function useSearchUsers(q) {
+  return useQuery(
+    ['users', 'search', q],
+    async () => {
+      try {
+        return await authApi.searchUsers(q)
+      } catch (err) {
+        if (!err.response) {
+          return mockCreators
+            .filter(c =>
+              c.name?.toLowerCase().includes(q.toLowerCase()) ||
+              c.username?.toLowerCase().includes(q.toLowerCase()),
+            )
+            .slice(0, 8)
+            .map(c => ({ id: c.id, name: c.name, username: c.username, avatar: c.avatar }))
+        }
+        throw err
+      }
+    },
+    { enabled: q.trim().length >= 2, staleTime: 30_000 },
   )
 }
 
@@ -188,17 +234,19 @@ export function useConversationSocket(conversationId, onNewMessage) {
     }
 
     joinRoom()
-    socket.on('new_message',  onNewMessage)
-    socket.on('typing',       ({ userId }) => onNewMessage?.({ __typing: true, userId }))
-    socket.on('stop_typing',  ({ userId }) => onNewMessage?.({ __stopTyping: true, userId }))
-    socket.on('connect',      onReconnect)
+    socket.on('new_message',     onNewMessage)
+    socket.on('message_deleted', ({ messageId }) => onNewMessage?.({ __deleted: true, messageId }))
+    socket.on('typing',          ({ userId }) => onNewMessage?.({ __typing: true, userId }))
+    socket.on('stop_typing',     ({ userId }) => onNewMessage?.({ __stopTyping: true, userId }))
+    socket.on('connect',         onReconnect)
 
     return () => {
       socket.emit('leave_conversation', conversationId)
-      socket.off('new_message',  onNewMessage)
+      socket.off('new_message',     onNewMessage)
+      socket.off('message_deleted')
       socket.off('typing')
       socket.off('stop_typing')
-      socket.off('connect',      onReconnect)
+      socket.off('connect',         onReconnect)
     }
   }, [token, conversationId, onNewMessage, qc])
 
@@ -207,7 +255,6 @@ export function useConversationSocket(conversationId, onNewMessage) {
     if (socket?.connected) {
       socket.emit('send_message', { conversationId, content })
     } else {
-      // REST fallback cuando el socket no está conectado
       try {
         await chatApi.sendMessage(conversationId, content)
       } catch { /* offline — el mensaje optimista ya se mostró */ }

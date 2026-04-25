@@ -222,4 +222,22 @@ router.get('/me', requireAuth, async (req, res) => {
   res.json(sanitizeUser(user))
 })
 
+// GET /api/auth/users?q= — buscar usuarios para iniciar conversación
+router.get('/users', requireAuth, async (req, res) => {
+  const q = String(req.query.q ?? '').trim()
+  if (q.length < 2) return res.json([])
+  const users = await prisma.user.findMany({
+    where: {
+      AND: [
+        { NOT: { id: req.user.id } },
+        { OR: [{ name: { contains: q } }, { username: { contains: q } }] },
+      ],
+    },
+    select: { id: true, name: true, username: true, avatar: true },
+    take: 10,
+    orderBy: { name: 'asc' },
+  })
+  res.json(users)
+})
+
 module.exports = router
