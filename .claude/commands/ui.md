@@ -1,0 +1,1 @@
+Revisá los componentes visuales del proyecto. Mejorá el diseño para que sea más premium, moderno y mobile-first estilo SaaS 2026. Animaciones sutiles, tipografía limpia, espaciado generoso. Mantené el design system existente.

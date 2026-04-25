@@ -1,0 +1,1 @@
+/compact — Resumí en 5 puntos qué hicimos en esta sesión y cuáles son los próximos pasos. Sé muy breve.

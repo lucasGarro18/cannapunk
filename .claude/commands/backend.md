@@ -1,0 +1,1 @@
+Revisá el backend de CannaPunk (Node + Express + Prisma). Verificá que los endpoints funcionan, que la base de datos está sincronizada y que no hay errores en las rutas de auth, productos y órdenes.

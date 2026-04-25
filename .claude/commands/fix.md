@@ -1,0 +1,1 @@
+Revisá todo el proyecto CannaPunk, detectá bugs críticos y corregílos sin romper funcionalidades existentes. Priorizá errores que afecten el flujo de compra y autenticación.

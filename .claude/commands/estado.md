@@ -1,0 +1,1 @@
+Dame un resumen del estado actual del proyecto CannaPunk: qué está funcionando, qué está roto y cuáles son las 3 tareas más urgentes para continuar.

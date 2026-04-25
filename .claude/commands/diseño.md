@@ -1,0 +1,1 @@
+Hacé una auditoría completa de UI/UX del proyecto CannaPunk. Revisá cada página, identificá problemas de diseño, inconsistencias visuales y oportunidades de mejora. Proponé y aplicá cambios concretos para que cada pantalla se vea como un producto premium de 2026.
