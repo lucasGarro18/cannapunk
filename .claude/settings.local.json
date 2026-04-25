@@ -38,7 +38,10 @@
       "Bash(xargs grep *)",
       "Bash(npx vite *)",
       "Bash(grep -E \"router\\\\.post|//.*upload\")",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(gh *)",
+      "PowerShell(winget install *)",
+      "PowerShell(gh auth *)"
     ]
   }
 }
