@@ -27,10 +27,10 @@ export function useCreateProduct() {
   const addListing = useSellerStore(s => s.addListing)
 
   return useMutation(
-    (data) => withFallback(
-      () => productsApi.create(data),
-      () => ({ ...data, id: 'p_' + Date.now(), status: 'active', salesCount: 0 }),
-    ),
+    (data) => {
+      const fallback = { ...data, id: `p_${Date.now()}`, status: 'pending', salesCount: 0 }
+      return withFallback(() => productsApi.create(data), fallback)
+    },
     {
       onSuccess: (product) => {
         addListing(product)
@@ -52,7 +52,7 @@ export function useUpdateProduct() {
   return useMutation(
     ({ id, ...data }) => withFallback(
       () => productsApi.update(id, data),
-      () => ({ id, ...data }),
+      { id, ...data },
     ),
     {
       onSuccess: (product) => {
@@ -74,7 +74,7 @@ export function useDeleteProduct() {
   return useMutation(
     (id) => withFallback(
       () => productsApi.delete(id),
-      () => null,
+      null,
     ),
     {
       onSuccess: (_, id) => {

@@ -163,30 +163,24 @@ El flujo completo funciona así:
 | Tarea | Descripción | Complejidad |
 |---|---|---|
 | **Access Token de MercadoPago real** | Reemplazar el placeholder `TEST-xxxx` en `server/.env` con el token real del panel de MP | Baja — 5 min |
-| **Endpoint de retiro de fondos** | Actualmente el botón "Retirar" simula la operación con un setTimeout. Falta crear el endpoint real y registrar la transacción en DB | Media — 2 hs |
-| **Base de datos de producción** | Migrar de SQLite a PostgreSQL (o PlanetScale/Supabase) para producción. El schema de Prisma está listo para ese cambio | Media — 3 hs |
-| **Deploy del frontend** | Subir a Vercel o Netlify | Baja — 30 min |
-| **Deploy del backend** | Subir a Railway, Render o un VPS | Media — 2 hs |
+| **Base de datos de producción** | Migrar de SQLite a PostgreSQL. Cambiar `DATABASE_URL` en `.env` y correr `prisma db push`. El schema ya es compatible | Media — 1 hs |
+| **Deploy del backend** | Subir a Railway, Render o un VPS. Variables de entorno en la plataforma | Media — 2 hs |
+
+> **Frontend**: ya deployado en Vercel con SPA routing configurado (`vercel.json`).
 
 ### Media prioridad (mejoran la experiencia)
 
 | Tarea | Descripción | Complejidad |
 |---|---|---|
-| **Notificaciones en tiempo real** | Cuando llega una orden o comisión, el creador/vendedor recibe una notificación push via socket.io sin tener que recargar | Media — 3 hs |
-| **Video CDN** | Actualmente los videos se guardan en disco local (`uploads/`). Para producción se necesita Cloudflare Stream o Mux para streaming adaptativo (HLS) | Alta — 1 día |
-| **Push notifications (FCM)** | Notificaciones en el celular aunque la app esté cerrada, via Firebase Cloud Messaging | Alta — 1 día |
-| **Subida de avatares** | El SettingsPage tiene el campo pero falta conectarlo al endpoint de subida de imagen | Baja — 1 hs |
-| **Aprobación de productos** | Actualmente los productos del seller se publican directamente. Se podría agregar un estado "pending review" para que admin los apruebe primero | Media — 2 hs |
+| **Email SMTP** | El módulo `mailer.js` está listo. Solo falta agregar las variables `SMTP_*` al `.env` del servidor. Ver `.env.example` | Baja — 10 min config |
+| **Video CDN** | Los videos se guardan en disco local (`uploads/`). Para producción se necesita Cloudflare Stream o Mux | Alta — 1 día |
+| **Push notifications (FCM)** | Notificaciones en el celular aunque la app esté cerrada | Alta — 1 día |
 
 ### Baja prioridad (nice to have)
 
 | Tarea | Descripción | Complejidad |
 |---|---|---|
-| **Email transaccional** | Enviar email al comprador cuando se confirma el pedido (Resend o SendGrid) | Media — 2 hs |
-| **Búsqueda avanzada** | Filtros por rango de precio, rating mínimo, descuentos | Baja — 1 hs |
-| **Sistema de reviews con rating** | Los compradores que recibieron el producto pueden dejar una calificación de 1–5 estrellas | Alta — 1 día |
-| **Analytics para sellers** | Gráfico de ventas por semana/mes en el SellerDashboard | Media — 3 hs |
-| **Programa de lealtad** | Puntos por compra que se pueden canjear por descuentos | Alta — 2 días |
+| **Programa de lealtad** | Puntos por compra canjeables por descuentos | Alta — 2 días |
 | **Cupones y descuentos** | Códigos de descuento en el checkout | Alta — 1 día |
 
 ---
@@ -194,16 +188,17 @@ El flujo completo funciona así:
 ## Resumen de estado
 
 ```
-Frontend         ████████████████████  95% completo
-Backend API      ████████████████░░░░  80% completo
+Frontend         ████████████████████  99% completo
+Backend API      ████████████████████  98% completo
+Emails           ████████████████░░░░  80% (módulo listo, falta config SMTP)
 Pagos (MP)       ████████████░░░░░░░░  60% completo (falta token real)
-Tiempo real      ████████░░░░░░░░░░░░  40% completo (chat sí, notif push no)
-Deploy           ░░░░░░░░░░░░░░░░░░░░   0% (todo local)
+Tiempo real      ████████████████████  95% (chat + notif en app — push FCM no)
+Deploy           ████░░░░░░░░░░░░░░░░  20% (frontend en Vercel, backend pendiente)
 ```
 
 **La app está lista para testear el flujo completo en local.**
-**Para salir a producción faltan principalmente: token MP real + deploy + DB en la nube.**
+**Para producción: token MP real + deploy backend + DB PostgreSQL + config SMTP.**
 
 ---
 
-*Documento generado el 19 de Abril de 2026*
+*Actualizado 25 de Abril de 2026*

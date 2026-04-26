@@ -8,6 +8,7 @@ const { z }          = require('zod')
 const prisma         = require('../db')
 const { requireAuth, rateLimit } = require('../middleware/auth')
 const { serializeRoles, fixUser } = require('../sqlite')
+const { sendWelcome } = require('../mailer')
 
 let avatarUpload = null
 function getAvatarUpload() {
@@ -71,6 +72,8 @@ router.post('/register', authLimiter, async (req, res) => {
       roles: serializeRoles(['buyer']),
     },
   })
+
+  sendWelcome({ to: email, name }).catch(err => console.error('[Mailer welcome]', err.message))
 
   res.status(201).json({ user: sanitizeUser(user), token: signToken(user) })
 })

@@ -5,6 +5,7 @@ const prisma          = require('../db')
 const { requireAuth } = require('../middleware/auth')
 const { serializeAddress } = require('../sqlite')
 const { notify }      = require('../notify')
+const { sendOrderConfirmation } = require('../mailer')
 
 const mp = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
@@ -12,7 +13,7 @@ const mp = new MercadoPagoConfig({
 
 const ORDER_INCLUDE = {
   items: { include: { product: true } },
-  buyer: { select: { id: true, name: true, username: true, avatar: true } },
+  buyer: { select: { id: true, name: true, username: true, avatar: true, email: true } },
 }
 
 // POST /api/mp/checkout — crea una preferencia y devuelve init_point
@@ -121,7 +122,7 @@ router.post('/webhook', async (req, res) => {
       return { productId, qty, unitPrice: p.price }
     })
 
-    await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx) => {
       for (const { productId, qty } of orderItems) {
         await tx.product.update({
           where: { id: productId },
@@ -129,7 +130,7 @@ router.post('/webhook', async (req, res) => {
         })
       }
 
-      const order = await tx.order.create({
+      const newOrder = await tx.order.create({
         data: {
           buyerId:    pending.buyerId,
           total:      pending.total,
@@ -148,7 +149,7 @@ router.post('/webhook', async (req, res) => {
             data: {
               creatorId: video.creatorId,
               videoId:   pending.referrerId,
-              orderId:   order.id,
+              orderId:   newOrder.id,
               amount:    commissionAmt,
             },
           })
@@ -171,7 +172,17 @@ router.post('/webhook', async (req, res) => {
       })
 
       await tx.pendingOrder.delete({ where: { mpPrefId: prefId } })
+
+      return newOrder
     })
+
+    sendOrderConfirmation({
+      to:    order.buyer.email,
+      name:  order.buyer.name,
+      orderId: order.id,
+      items:   order.items,
+      total:   order.total,
+    }).catch(err => console.error('[Mailer order]', err.message))
   } catch (err) {
     console.error('[MP Webhook]', err)
   }
