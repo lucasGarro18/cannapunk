@@ -123,6 +123,7 @@ export default function RegisterPage() {
                   })}
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Mínimo 8 caracteres"
+                  autoComplete="new-password"
                   className="input"
                   style={{ paddingLeft: '2.5rem', paddingRight: '2.75rem' }}
                 />
