@@ -71,6 +71,7 @@ router.post('/register', authLimiter, async (req, res) => {
     data: {
       name, email, username: finalUsername, passwordHash,
       roles: serializeRoles(['buyer']),
+      ...(referredBy ? { referredBy } : {}),
     },
   })
 

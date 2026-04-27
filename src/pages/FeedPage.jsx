@@ -257,7 +257,7 @@ export default function FeedPage() {
     <div className={`relative overflow-hidden bg-black ${
       isAuthenticated
         ? 'h-[calc(100vh-7.5rem)] md:h-[calc(100vh-3.5rem)]'
-        : 'h-[calc(100vh-3.5rem)]'
+        : 'h-[calc(100vh-7rem)] md:h-[calc(100vh-3.5rem)]'
     }`}>
 
       {/* Category tabs — overlay at top */}
