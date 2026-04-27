@@ -1,27 +1,27 @@
-﻿import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   RiHeartLine, RiHeartFill, RiShareForwardLine,
   RiShoppingBag3Line, RiVolumeUpLine, RiVolumeMuteLine,
-  RiUserAddLine, RiCheckLine, RiPlayLine, RiPauseLine,
+  RiPlayLine, RiPauseLine, RiFlashlightLine,
 } from 'react-icons/ri'
 import { AnimatePresence, motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import Avatar from '@/components/ui/Avatar'
-import Spotlight from '@/components/ui/Spotlight'
 import { formatNumber, formatCurrency } from '@/utils/format'
 import { useSocialStore } from '@/store/socialStore'
 import { useAuthStore } from '@/store/authStore'
 import { useVideosStore } from '@/store/videosStore'
 import { useFeedVideos } from '@/hooks/useVideos'
 import { videosApi } from '@/services/api'
-import clsx from 'clsx'
 
-// ─── VideoItem full-screen ────────────────────────────────────
+const CATEGORIES = ['Para ti', 'Siguiendo', 'Electronica', 'Indumentaria', 'Calzado', 'Accesorios']
+
+// ─── VideoItem ────────────────────────────────────────────────
 function VideoItem({ video, isActive }) {
-  const [muted,   setMuted]   = useState(true)
-  const [playing, setPlaying] = useState(false)
-  const [showPause, setShowPause] = useState(false)
+  const [muted,          setMuted]          = useState(true)
+  const [playing,        setPlaying]        = useState(false)
+  const [showPause,      setShowPause]      = useState(false)
   const [doubleTapHeart, setDoubleTapHeart] = useState(false)
   const videoRef   = useRef(null)
   const lastTap    = useRef(0)
@@ -52,14 +52,15 @@ function VideoItem({ video, isActive }) {
   }
 
   const handleFollow = (e) => {
-    e.preventDefault()
-    if (!isAuthenticated) { toast.error('Iniciá sesión para seguir creadores'); return }
+    e.stopPropagation()
+    if (!isAuthenticated) { toast.error('Iniciá sesión para seguir'); return }
     if (isOwn) return
     toggleFollow(creator.username)
     toast.success(following ? `Dejaste de seguir a @${creator.username}` : `Seguís a @${creator.username}`)
   }
 
-  const handleShare = async () => {
+  const handleShare = async (e) => {
+    e.stopPropagation()
     const url = product?.id
       ? `${window.location.origin}/product/${product.id}?ref=${video.id}`
       : `${window.location.origin}/feed`
@@ -70,10 +71,11 @@ function VideoItem({ video, isActive }) {
   }
 
   const handleVideoTap = (e) => {
+    // No interceptar clicks en el card de producto ni en sus hijos
+    if (e.target.closest('[data-card]')) return
     if (e.target.closest('a') || e.target.closest('button')) return
     const now = Date.now()
     if (now - lastTap.current < 300) {
-      // Double tap — like
       lastTap.current = 0
       clearTimeout(pauseTimer.current)
       if (isAuthenticated) {
@@ -85,149 +87,197 @@ function VideoItem({ video, isActive }) {
       lastTap.current = now
       pauseTimer.current = setTimeout(() => {
         if (!videoRef.current) return
-        if (playing) {
-          videoRef.current.pause()
-          setPlaying(false)
-        } else {
-          videoRef.current.play?.().catch(() => {})
-          setPlaying(true)
-        }
+        if (playing) { videoRef.current.pause(); setPlaying(false) }
+        else { videoRef.current.play?.().catch(() => {}); setPlaying(true) }
         setShowPause(true)
-        setTimeout(() => setShowPause(false), 900)
+        setTimeout(() => setShowPause(false), 800)
       }, 300)
     }
   }
 
   return (
-    <Spotlight className="w-full h-full" color="rgba(245,158,11,0.06)">
     <div className="relative w-full h-full bg-black select-none" onClick={handleVideoTap}>
-      {/* Media */}
+
+      {/* ── Media ───────────────────────────────── */}
       {videoUrl
         ? <video ref={videoRef} src={videoUrl} poster={thumbnailUrl}
                  muted={muted} loop playsInline
                  className="absolute inset-0 w-full h-full object-cover" />
-        : <img src={thumbnailUrl} alt={title}
-               className="absolute inset-0 w-full h-full object-cover" />
+        : <img   src={thumbnailUrl} alt={title}
+                 className="absolute inset-0 w-full h-full object-cover" />
       }
 
-      {/* Gradients */}
-      <div className="absolute inset-0"
-           style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 30%, transparent 50%, rgba(0,0,0,0.85) 100%)' }} />
+      {/* Fade video into commerce card */}
+      <div className="absolute inset-0 pointer-events-none"
+           style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, transparent 22%, transparent 42%, rgba(8,8,10,0.88) 68%, #08080a 100%)' }} />
 
-      {/* Tap-to-pause icon */}
+      {/* ── Tap-to-pause indicator ──────────────── */}
       <AnimatePresence>
         {showPause && (
           <motion.div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
-            initial={{ opacity: 0, scale: 0.6 }}
+            className="absolute inset-x-0 flex items-center justify-center pointer-events-none z-30"
+            style={{ top: 0, bottom: '38%' }}
+            initial={{ opacity: 0, scale: 0.55 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.2 }}
-            transition={{ duration: 0.18 }}>
-            <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                 style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}>
+            exit={{ opacity: 0, scale: 1.25 }}
+            transition={{ duration: 0.16 }}
+          >
+            <div className="w-14 h-14 rounded-full flex items-center justify-center"
+                 style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,0.1)' }}>
               {playing
-                ? <RiPauseLine size={32} className="text-white" />
-                : <RiPlayLine  size={32} className="text-white" style={{ marginLeft: '3px' }} />}
+                ? <RiPauseLine size={26} className="text-white" />
+                : <RiPlayLine  size={26} className="text-white ml-0.5" />}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Double-tap heart burst */}
+      {/* ── Double-tap heart ────────────────────── */}
       <AnimatePresence>
         {doubleTapHeart && (
           <motion.div
             className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
-            initial={{ opacity: 0, scale: 0.4 }}
-            animate={{ opacity: 1, scale: 1.2 }}
-            exit={{ opacity: 0, scale: 1.5 }}
-            transition={{ duration: 0.35, ease: [0.16,1,0.3,1] }}>
-            <RiHeartFill size={90} style={{ color: '#ef4444', filter: 'drop-shadow(0 0 24px rgba(239,68,68,0.7))' }} />
+            initial={{ opacity: 0, scale: 0.3 }}
+            animate={{ opacity: 1, scale: 1.05 }}
+            exit={{ opacity: 0, scale: 1.4 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <RiHeartFill size={84}
+              style={{ color: '#ef4444', filter: 'drop-shadow(0 0 30px rgba(239,68,68,0.75))' }} />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Right actions ─────────────────────── */}
-      <div className="absolute right-3 bottom-28 flex flex-col items-center gap-5 z-10">
-        <div className="flex flex-col items-center gap-1">
-          <div className="relative">
-            <Link to={`/profile/${creator.username}`}>
-              <Avatar src={creator.avatar} name={creator.name} size="md" />
+      {/* ── Mute — top right ────────────────────── */}
+      <button
+        onClick={(e) => { e.stopPropagation(); setMuted(m => !m) }}
+        className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+        style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}
+      >
+        {muted
+          ? <RiVolumeMuteLine size={15} style={{ color: 'rgba(255,255,255,0.65)' }} />
+          : <RiVolumeUpLine   size={15} style={{ color: '#f59e0b' }} />
+        }
+      </button>
+
+      {/* ── Commerce card ───────────────────────── */}
+      <div data-card className="absolute bottom-0 left-0 right-0 z-10 px-3.5 pb-3.5 pt-0 space-y-2.5">
+
+        {/* Creator + actions */}
+        <div className="flex items-center gap-2">
+          <Link to={`/profile/${creator.username}`} onClick={e => e.stopPropagation()}>
+            <Avatar src={creator.avatar} name={creator.name} size="sm" />
+          </Link>
+
+          <div className="flex-1 min-w-0">
+            <Link
+              to={`/profile/${creator.username}`}
+              onClick={e => e.stopPropagation()}
+              className="text-sm font-bold text-white hover:text-amber-400 transition-colors truncate block"
+            >
+              @{creator.username}
             </Link>
-            {!isOwn && (
-              <button onClick={handleFollow}
-                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center transition-colors"
-                      style={{ background: following ? '#fff' : '#f59e0b' }}>
-                {following
-                  ? <RiCheckLine  size={11} style={{ color: '#0c0c0e' }} />
-                  : <RiUserAddLine size={11} style={{ color: '#0c0c0e' }} />}
-              </button>
-            )}
           </div>
-        </div>
 
-        <button onClick={handleLike} className="flex flex-col items-center gap-1">
-          {liked
-            ? <RiHeartFill size={30} className="text-red-500 drop-shadow-lg" style={{ filter: 'drop-shadow(0 0 8px rgba(239,68,68,0.6))' }} />
-            : <RiHeartLine size={30} className="text-white drop-shadow-lg" />}
-          <span className="text-xs text-white font-semibold drop-shadow">
-            {formatNumber(likes + (liked ? 1 : 0))}
-          </span>
-        </button>
-
-        <button onClick={handleShare} className="flex flex-col items-center gap-1">
-          <RiShareForwardLine size={28} className="text-white drop-shadow-lg" />
-          <span className="text-xs text-white font-semibold drop-shadow">Compartir</span>
-        </button>
-
-        <button onClick={() => setMuted(m => !m)} className="flex flex-col items-center gap-1">
-          {muted
-            ? <RiVolumeMuteLine size={24} className="drop-shadow-lg" style={{ color: 'rgba(255,255,255,0.7)' }} />
-            : <RiVolumeUpLine   size={24} className="drop-shadow-lg" style={{ color: 'rgba(255,255,255,0.7)' }} />}
-        </button>
-      </div>
-
-      {/* ── Bottom info ───────────────────────── */}
-      <div className="absolute bottom-4 left-0 right-14 px-4 space-y-2.5 z-10">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-bold text-white drop-shadow">@{creator.username}</span>
-          {commissionPct && (
-            <span className="badge-neon" style={{ fontSize: '10px' }}>+{commissionPct}% comisión</span>
+          {/* Follow */}
+          {!isOwn && (
+            <button
+              onClick={handleFollow}
+              className="flex-shrink-0 text-xs font-semibold rounded-full px-3 py-1 transition-all"
+              style={following
+                ? { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.12)' }
+                : { background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.28)' }
+              }
+            >
+              {following ? 'Siguiendo' : '+ Seguir'}
+            </button>
           )}
+
+          {/* Like */}
+          <button
+            onClick={(e) => { e.stopPropagation(); handleLike() }}
+            className="flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-all flex-shrink-0"
+            style={{
+              background: liked ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.06)',
+              border: liked ? '1px solid rgba(239,68,68,0.28)' : '1px solid rgba(255,255,255,0.1)',
+            }}
+          >
+            {liked
+              ? <RiHeartFill size={14} className="text-red-400" />
+              : <RiHeartLine size={14} style={{ color: 'rgba(255,255,255,0.55)' }} />
+            }
+            <span className="text-xs font-medium tabular-nums"
+                  style={{ color: liked ? '#f87171' : 'rgba(255,255,255,0.5)' }}>
+              {formatNumber(likes + (liked ? 1 : 0))}
+            </span>
+          </button>
+
+          {/* Share */}
+          <button
+            onClick={handleShare}
+            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <RiShareForwardLine size={15} style={{ color: 'rgba(255,255,255,0.55)' }} />
+          </button>
         </div>
 
-        <p className="text-sm text-white leading-snug drop-shadow line-clamp-2" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+        {/* Title */}
+        <p className="text-[13px] leading-snug line-clamp-2 pl-0.5"
+           style={{ color: 'rgba(255,255,255,0.78)' }}>
           {title}
         </p>
 
-        {product && (
-          <Link to={`/product/${product.id}?ref=${video.id}`}
-                className="flex items-center gap-2.5 rounded-xl p-2.5 w-fit max-w-xs"
-                style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', border: '1px solid rgba(245,158,11,0.25)' }}>
+        {/* Product card */}
+        {product ? (
+          <Link
+            to={`/product/${product.id}?ref=${video.id}`}
+            onClick={e => e.stopPropagation()}
+            className="flex items-center gap-3 rounded-2xl p-3 transition-all"
+            style={{ background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(255,255,255,0.07)' }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(245,158,11,0.32)'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'}
+          >
             <img src={product.imageUrl} alt={product.name}
-                 className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.7)' }}>{product.name}</p>
-              <p className="text-sm font-bold" style={{ color: '#f59e0b' }}>{formatCurrency(product.price)}</p>
+                 className="w-11 h-11 rounded-xl object-cover flex-shrink-0" />
+
+            <div className="flex-1 min-w-0">
+              <p className="text-xs truncate mb-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                {product.name}
+              </p>
+              <p className="text-base font-bold leading-none" style={{ color: '#f59e0b' }}>
+                {formatCurrency(product.price)}
+              </p>
             </div>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+
+            {commissionPct > 0 && (
+              <div className="flex items-center gap-1 rounded-full px-2 py-1 flex-shrink-0"
+                   style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                <RiFlashlightLine size={10} style={{ color: '#f59e0b' }} />
+                <span className="text-[11px] font-bold tabular-nums" style={{ color: '#f59e0b' }}>
+                  +{commissionPct}%
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-1.5 rounded-xl px-3 py-2 flex-shrink-0 transition-all"
                  style={{ background: '#f59e0b' }}>
-              <RiShoppingBag3Line size={15} style={{ color: '#0c0c0e' }} />
+              <RiShoppingBag3Line size={13} style={{ color: '#0c0c0e' }} />
+              <span className="text-xs font-bold" style={{ color: '#0c0c0e' }}>Ver</span>
             </div>
           </Link>
+        ) : (
+          <div style={{ height: '2px' }} />
         )}
       </div>
     </div>
-    </Spotlight>
   )
 }
 
 // ─── FeedPage ─────────────────────────────────────────────────
-const CATEGORIES = ['Para ti', 'Siguiendo', 'Electronica', 'Indumentaria', 'Calzado', 'Accesorios']
-
 export default function FeedPage() {
-  const [activeIdx,  setActiveIdx]  = useState(0)
-  const [activeCat,  setActiveCat]  = useState('Para ti')
+  const [activeIdx, setActiveIdx] = useState(0)
+  const [activeCat, setActiveCat] = useState('Para ti')
   const containerRef = useRef(null)
 
   const { isAuthenticated } = useAuthStore()
@@ -245,79 +295,110 @@ export default function FeedPage() {
 
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return
-    const h = containerRef.current.clientHeight
+    const h   = containerRef.current.clientHeight
     const idx = Math.round(containerRef.current.scrollTop / h)
     setActiveIdx(idx)
-    // Carga más cuando quedan 2 videos para el final
     if (hasNextPage && idx >= videos.length - 2) fetchNextPage()
   }, [hasNextPage, videos.length, fetchNextPage])
 
+  const switchCat = (cat) => {
+    setActiveCat(cat)
+    setActiveIdx(0)
+    if (containerRef.current) containerRef.current.scrollTop = 0
+  }
+
   return (
-    // Full-screen: subtract navbar (3.5rem); on mobile+auth also bottom nav (4rem)
-    <div className={`relative overflow-hidden bg-black ${
+    <div className={`flex flex-col overflow-hidden ${
       isAuthenticated
         ? 'h-[calc(100vh-7.5rem)] md:h-[calc(100vh-3.5rem)]'
         : 'h-[calc(100vh-7rem)] md:h-[calc(100vh-3.5rem)]'
     }`}>
 
-      {/* Category tabs — overlay at top */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex gap-2 px-4 pt-3 pb-3 overflow-x-auto scrollbar-hide"
-           style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, transparent 100%)' }}>
-        {CATEGORIES.map(cat => (
-          <button key={cat} onClick={() => { setActiveCat(cat); setActiveIdx(0); if (containerRef.current) containerRef.current.scrollTop = 0 }}
-                  className="flex-shrink-0 rounded-full text-xs font-semibold transition-all px-3.5 py-1.5"
-                  style={activeCat === cat
-                    ? { background: '#f59e0b', color: '#0c0c0e' }
-                    : { background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}>
-            {cat}
-          </button>
-        ))}
+      {/* ── Category strip ────────────────────── */}
+      <div className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto scrollbar-hide"
+           style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: '#08080a' }}>
+        {CATEGORIES.map(cat => {
+          const active = activeCat === cat
+          return (
+            <button
+              key={cat}
+              onClick={() => switchCat(cat)}
+              className="flex-shrink-0 text-xs font-semibold rounded-full px-3.5 py-1.5 transition-all"
+              style={active
+                ? { background: '#f59e0b', color: '#0c0c0e' }
+                : { background: 'rgba(255,255,255,0.05)', color: '#6b7280' }
+              }
+            >
+              {cat}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Empty state */}
-      {videos.length === 0 && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 px-6 text-center"
-             style={{ top: '3.5rem' }}>
-          {activeCat === 'Siguiendo' ? (
-            <>
-              <p className="text-2xl">👀</p>
-              <p className="font-semibold text-white">Seguí a creadores para ver su contenido acá</p>
-              <Link to="/market" className="btn-primary text-sm py-2.5 px-6">Explorar creadores</Link>
-            </>
-          ) : (
-            <>
-              <p className="text-2xl">🎬</p>
-              <p className="font-semibold text-white">No hay videos en esta categoría</p>
-            </>
-          )}
-        </div>
-      )}
+      {/* ── Scroll area ───────────────────────── */}
+      <div className="relative flex-1 overflow-hidden bg-black">
 
-      {/* Vertical snap scroll */}
-      <div ref={containerRef} onScroll={handleScroll}
-           className="scrollbar-hide"
-           style={{ height: '100%', overflowY: 'scroll', scrollSnapType: 'y mandatory' }}>
-        {videos.map((video, idx) => (
-          <div key={video.id} style={{ height: '100%', flexShrink: 0, scrollSnapAlign: 'start' }}>
-            <VideoItem video={video} isActive={idx === activeIdx} />
+        {/* Empty state */}
+        {videos.length === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center z-10">
+            {activeCat === 'Siguiendo' ? (
+              <>
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                     style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
+                  <span className="text-2xl">👀</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-white">Seguí creadores para ver su contenido</p>
+                  <p className="text-xs text-gray-600 mt-1">Todavía no seguís a nadie</p>
+                </div>
+                <Link to="/creators" className="btn-primary text-sm py-2.5 px-6">
+                  Explorar creadores
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                     style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span className="text-2xl">🎬</span>
+                </div>
+                <p className="font-semibold text-white">No hay videos en esta categoría</p>
+              </>
+            )}
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* Dot progress indicators — max 12, hidden beyond */}
-      {videos.length <= 20 && (
-        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-20 max-h-[70vh] overflow-hidden">
-          {videos.slice(0, 20).map((_, i) => (
-            <div key={i}
-                 className="rounded-full transition-all duration-300 flex-shrink-0"
-                 style={{
-                   width:  '3px',
-                   height: i === activeIdx ? '18px' : '5px',
-                   background: i === activeIdx ? '#f59e0b' : 'rgba(255,255,255,0.3)',
-                 }} />
+        {/* Snap scroll */}
+        <div
+          ref={containerRef}
+          onScroll={handleScroll}
+          className="scrollbar-hide"
+          style={{ height: '100%', overflowY: 'scroll', scrollSnapType: 'y mandatory' }}
+        >
+          {videos.map((video, idx) => (
+            <div key={video.id} style={{ height: '100%', scrollSnapAlign: 'start', flexShrink: 0 }}>
+              <VideoItem video={video} isActive={idx === activeIdx} />
+            </div>
           ))}
         </div>
-      )}
+
+        {/* Progress dots — left side, vertical center */}
+        {videos.length > 1 && videos.length <= 20 && (
+          <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-20 pointer-events-none"
+               style={{ transform: 'translateY(-50%) translateY(-19%)' }}>
+            {videos.slice(0, 20).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-full transition-all duration-300 flex-shrink-0"
+                style={{
+                  width:      '3px',
+                  height:      i === activeIdx ? '18px' : '4px',
+                  background:  i === activeIdx ? '#f59e0b' : 'rgba(255,255,255,0.2)',
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
