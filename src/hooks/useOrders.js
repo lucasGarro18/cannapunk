@@ -82,3 +82,16 @@ export function useAdvanceOrderStatus() {
     },
   )
 }
+
+export function useCancelOrder() {
+  const qc = useQueryClient()
+  return useMutation(
+    (id) => ordersApi.cancel(id),
+    {
+      onSuccess: (_, id) => {
+        qc.invalidateQueries(['orders'])
+        qc.invalidateQueries(['order', id])
+      },
+    },
+  )
+}

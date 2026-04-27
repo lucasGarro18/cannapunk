@@ -1,8 +1,8 @@
 ﻿import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { RiArrowLeftLine, RiTruckLine, RiMapPinLine, RiMessage3Line, RiCheckLine, RiVideoLine } from 'react-icons/ri'
+import { RiArrowLeftLine, RiTruckLine, RiMapPinLine, RiMessage3Line, RiCheckLine, RiVideoLine, RiCloseLine } from 'react-icons/ri'
 import toast from 'react-hot-toast'
-import { useOrder } from '@/hooks/useOrders'
+import { useOrder, useCancelOrder } from '@/hooks/useOrders'
 import { ListItemSkeleton } from '@/components/ui/Skeleton'
 import { formatCurrency } from '@/utils/format'
 
@@ -81,7 +81,9 @@ export default function OrderDetailPage() {
   const { id }   = useParams()
   const navigate  = useNavigate()
   const { data: order, isLoading } = useOrder(id)
+  const { mutate: cancelOrder, isLoading: cancelling } = useCancelOrder()
   const [animate, setAnimate] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
 
   useEffect(() => {
     const t = setTimeout(() => setAnimate(true), 100)
@@ -182,11 +184,11 @@ export default function OrderDetailPage() {
       <div className="card overflow-hidden">
         <div className="p-4" style={{ borderBottom: '1px solid #27272a' }}>
           <h2 className="font-semibold">
-            Productos <span className="text-xs font-normal" style={{ color: '#4b5563' }}>({order.items.length})</span>
+            Productos <span className="text-xs font-normal" style={{ color: '#4b5563' }}>({(order.items ?? []).length})</span>
           </h2>
         </div>
         <div>
-          {order.items.map(({ product, qty, unitPrice: price }) => (
+          {(order.items ?? []).map(({ product, qty, unitPrice: price }) => (
             <div key={product.id} className="flex items-center gap-3 p-4"
                  style={{ borderBottom: '1px solid #27272a' }}>
               <img src={product.imageUrl} alt={product.name}
@@ -218,7 +220,7 @@ export default function OrderDetailPage() {
       )}
 
       {/* Review CTA — solo si fue entregado y tiene comisión activa */}
-      {order.status === 'delivered' && order.items.some(i => (i.product?.commissionPct ?? 0) > 0) && (
+      {order.status === 'delivered' && (order.items ?? []).some(i => (i.product?.commissionPct ?? 0) > 0) && (
         <div className="card p-4 flex items-center gap-3"
              style={{ border: '1px solid rgba(245,158,11,0.2)', background: 'rgba(245,158,11,0.04)' }}>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -232,6 +234,30 @@ export default function OrderDetailPage() {
           <Link to="/upload" className="btn-primary text-xs py-2 px-3 flex-shrink-0">
             Subir review
           </Link>
+        </div>
+      )}
+
+      {/* Cancel confirmation */}
+      {confirmCancel && (
+        <div className="card p-4 space-y-3"
+             style={{ border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.05)' }}>
+          <p className="text-sm font-semibold text-red-400">¿Cancelar este pedido?</p>
+          <p className="text-xs text-gray-500">Esta acción no se puede deshacer. El stock se restaurará.</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => cancelOrder(order.id, {
+                onSuccess: () => { toast.success('Pedido cancelado'); navigate('/orders') },
+                onError: (err) => toast.error(err?.response?.data?.error ?? 'No se pudo cancelar'),
+              })}
+              disabled={cancelling}
+              className="btn-danger flex-1 py-2.5 text-sm gap-1.5">
+              {cancelling ? 'Cancelando...' : 'Sí, cancelar'}
+            </button>
+            <button onClick={() => setConfirmCancel(false)}
+                    className="btn-secondary flex-1 py-2.5 text-sm">
+              Volver
+            </button>
+          </div>
         </div>
       )}
 
@@ -252,6 +278,15 @@ export default function OrderDetailPage() {
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#27272a'; e.currentTarget.style.color = '#6b7280' }}>
             <RiVideoLine size={15} /> Ver producto
           </Link>
+        ) : order.status === 'processing' ? (
+          <button
+            onClick={() => setConfirmCancel(true)}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-xl transition-all"
+            style={{ border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', background: 'transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.07)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+            <RiCloseLine size={15} /> Cancelar pedido
+          </button>
         ) : (
           <button disabled
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-xl opacity-40 cursor-not-allowed"

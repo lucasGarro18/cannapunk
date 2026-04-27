@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { RiMailLine, RiLockLine, RiEyeLine, RiEyeOffLine } from 'react-icons/ri'
+import { RiMailLine, RiLockLine, RiEyeLine, RiEyeOffLine, RiArrowRightLine } from 'react-icons/ri'
 import Logo from '@/components/ui/Logo'
 import Spinner from '@/components/ui/Spinner'
 import { useLogin } from '@/hooks/useAuth'
@@ -10,8 +10,15 @@ export default function LoginPage() {
   const { mutate: login, isLoading } = useLogin()
   const { register, handleSubmit, formState: { errors } } = useForm()
   const [showPassword, setShowPassword] = useState(false)
+  const [searchParams]  = useSearchParams()
+  const navigate        = useNavigate()
 
   const onSubmit = (data) => login(data)
+
+  const handleGuest = () => {
+    const redirect = searchParams.get('redirect')
+    navigate(redirect && redirect !== '/login' ? redirect : '/feed')
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4"
@@ -115,6 +122,17 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
+
+        {/* Guest access */}
+        <button
+          onClick={handleGuest}
+          className="w-full flex items-center justify-center gap-2 py-3 text-sm transition-colors"
+          style={{ color: '#4b5563' }}
+          onMouseEnter={e => e.currentTarget.style.color = '#9ca3af'}
+          onMouseLeave={e => e.currentTarget.style.color = '#4b5563'}
+        >
+          Explorar sin cuenta <RiArrowRightLine size={14} />
+        </button>
       </div>
     </div>
   )

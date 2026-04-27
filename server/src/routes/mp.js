@@ -33,20 +33,21 @@ router.post('/checkout', requireAuth, async (req, res) => {
       notes:    z.string().optional(),
     }),
     referrerId: z.string().optional(),
+    couponCode: z.string().optional(),
   })
 
-  const { items, address, referrerId } = schema.parse(req.body)
+  const { items, address, referrerId, couponCode } = schema.parse(req.body)
 
   const products = await prisma.product.findMany({
     where: { id: { in: items.map(i => i.productId) } },
   })
 
-  let total = 0
+  let subtotal = 0
   const mpItems = items.map(({ productId, qty }) => {
     const p = products.find(p => p.id === productId)
     if (!p) throw Object.assign(new Error(`Producto ${productId} no encontrado`), { status: 400 })
     if (p.stock < qty) throw Object.assign(new Error(`Stock insuficiente: ${p.name}`), { status: 400 })
-    total += p.price * qty
+    subtotal += p.price * qty
     return {
       id:          p.id,
       title:       p.name,
@@ -56,12 +57,35 @@ router.post('/checkout', requireAuth, async (req, res) => {
     }
   })
 
+  // Validar cupón si se envió
+  let discount = 0
+  let resolvedCouponCode = null
+  if (couponCode) {
+    const coupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } })
+    const valid = coupon && coupon.active
+      && (!coupon.expiresAt || coupon.expiresAt > new Date())
+      && (coupon.maxUses === null || coupon.usedCount < coupon.maxUses)
+      && subtotal >= coupon.minOrder
+    if (valid) {
+      discount = coupon.type === 'percent'
+        ? Math.round(subtotal * coupon.value / 100)
+        : Math.min(coupon.value, subtotal)
+      resolvedCouponCode = coupon.code
+    }
+  }
+  const total = subtotal - discount
+
+  // Si hay descuento, usar un ítem agregado para que MP cobre el total correcto
+  const finalMpItems = discount > 0
+    ? [{ id: 'order', title: `CannaPunk — ${items.length} producto(s)`, quantity: 1, unit_price: total / 100, currency_id: 'ARS' }]
+    : mpItems
+
   const baseUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
 
   const pref = new Preference(mp)
   const prefData = await pref.create({
     body: {
-      items:      mpItems,
+      items:      finalMpItems,
       payer:      { name: address.fullName, phone: { number: address.phone } },
       back_urls: {
         success: `${baseUrl}/orders?payment=success`,
@@ -82,6 +106,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
       items:      JSON.stringify(items),
       address:    serializeAddress(address),
       referrerId: referrerId ?? null,
+      couponCode: resolvedCouponCode,
       total,
     },
   })
@@ -170,6 +195,13 @@ router.post('/webhook', async (req, res) => {
         body:      'Tu pedido está en preparación. ¡Gracias por tu compra!',
         actionUrl: '/orders',
       })
+
+      if (pending.couponCode) {
+        await tx.coupon.update({
+          where: { code: pending.couponCode },
+          data:  { usedCount: { increment: 1 } },
+        }).catch(() => {})
+      }
 
       await tx.pendingOrder.delete({ where: { mpPrefId: prefId } })
 

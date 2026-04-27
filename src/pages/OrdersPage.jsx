@@ -175,14 +175,14 @@ export default function OrdersPage() {
                   {/* Product thumbnails */}
                   <div className="flex items-center gap-2.5">
                     <div className="flex -space-x-2">
-                      {order.items.slice(0, 3).map(({ product }, i) => (
+                      {(order.items ?? []).slice(0, 3).map(({ product }, i) => (
                         <img key={i} src={product.imageUrl} alt={product.name}
                              className="w-10 h-10 rounded-lg object-cover"
                              style={{ border: '2px solid #18181c' }} />
                       ))}
                     </div>
                     <p className="text-xs flex-1 truncate" style={{ color: '#4b5563' }}>
-                      {order.items.map(i => i.product.name).join(', ')}
+                      {(order.items ?? []).map(i => i.product.name).join(', ')}
                     </p>
                     <RiArrowRightLine size={15} style={{ color: '#374151', flexShrink: 0 }} />
                   </div>

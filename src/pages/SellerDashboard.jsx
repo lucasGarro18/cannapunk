@@ -457,13 +457,13 @@ export default function SellerDashboard() {
                         </div>
                       </div>
                       <div className="flex gap-2.5">
-                        {order.items.map(({ product }, i) => (
+                        {(order.items ?? []).map(({ product }, i) => (
                           <img key={i} src={product.imageUrl} alt={product.name}
                                className="w-10 h-10 rounded-lg object-cover" />
                         ))}
                         <div className="flex-1 min-w-0 self-center">
                           <p className="text-xs truncate" style={{ color: '#52525b' }}>
-                            {order.items.map(i => i.product.name).join(', ')}
+                            {(order.items ?? []).map(i => i.product.name).join(', ')}
                           </p>
                         </div>
                       </div>

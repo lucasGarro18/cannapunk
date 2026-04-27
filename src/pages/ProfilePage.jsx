@@ -208,7 +208,7 @@ export default function ProfilePage() {
   const addItem  = useCartStore(s => s.addItem)
   const openCart = useUIStore(s => s.openCart)
   const { data: orders = [] } = useOrders()
-  const purchasedProducts = [...new Map(orders.flatMap(o => o.items.map(i => [i.product.id, i.product]))).values()]
+  const purchasedProducts = [...new Map(orders.flatMap(o => (o.items ?? []).filter(i => i?.product).map(i => [i.product.id, i.product]))).values()]
 
   const following = isFollowing(creator.username)
   const handleFollow = () => {

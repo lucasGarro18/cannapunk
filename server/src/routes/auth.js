@@ -9,6 +9,7 @@ const prisma         = require('../db')
 const { requireAuth, rateLimit } = require('../middleware/auth')
 const { serializeRoles, fixUser } = require('../sqlite')
 const { sendWelcome } = require('../mailer')
+const { notify } = require('../notify')
 
 let avatarUpload = null
 function getAvatarUpload() {
@@ -74,6 +75,20 @@ router.post('/register', authLimiter, async (req, res) => {
   })
 
   sendWelcome({ to: email, name }).catch(err => console.error('[Mailer welcome]', err.message))
+
+  // Notificar al referidor si se registró con su link
+  if (referredBy) {
+    const referrer = await prisma.user.findUnique({ where: { username: referredBy } }).catch(() => null)
+    if (referrer) {
+      notify(prisma, {
+        userId:    referrer.id,
+        type:      'referral',
+        title:     'Nuevo referido',
+        body:      `@${user.username} se registró con tu link de referido`,
+        actionUrl: '/referrals',
+      }).catch(() => {})
+    }
+  }
 
   res.status(201).json({ user: sanitizeUser(user), token: signToken(user) })
 })

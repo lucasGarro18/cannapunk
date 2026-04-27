@@ -124,40 +124,49 @@ async function main() {
     }),
   ])
 
+  const VIDEO_URLS = [
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+  ]
+
   // Videos
   await Promise.all([
     prisma.video.upsert({
       where: { id: 'vid_001' },
-      update: {},
+      update: { videoUrl: VIDEO_URLS[0] },
       create: {
         id: 'vid_001',
         title: 'Review Auriculares Punk Pro — valen cada peso?',
         description: 'Análisis completo después de 2 semanas de uso.',
         thumbnailUrl: 'https://picsum.photos/seed/vid1/400/700',
+        videoUrl: VIDEO_URLS[0],
         likes: 1240, views: 45300, commissionPct: 10, tags: serializeTags(['electronica', 'review', 'audio']),
         creatorId: sofia.id, productId: 'prod_001',
       },
     }),
     prisma.video.upsert({
       where: { id: 'vid_002' },
-      update: {},
+      update: { videoUrl: VIDEO_URLS[1] },
       create: {
         id: 'vid_002',
         title: 'Unboxing Street Runner V2 — el mejor calzado urbano?',
         description: 'Primeras impresiones y fit check completo.',
         thumbnailUrl: 'https://picsum.photos/seed/vid2/400/700',
+        videoUrl: VIDEO_URLS[1],
         likes: 890, views: 32100, commissionPct: 8, tags: serializeTags(['calzado', 'unboxing', 'moda']),
         creatorId: sofia.id, productId: 'prod_002',
       },
     }),
     prisma.video.upsert({
       where: { id: 'vid_003' },
-      update: {},
+      update: { videoUrl: VIDEO_URLS[2] },
       create: {
         id: 'vid_003',
         title: 'Mochila Tactical EDC — perfecta para el día a día',
         description: 'Qué cabe adentro, calidad de materiales y veredicto final.',
         thumbnailUrl: 'https://picsum.photos/seed/vid3/400/700',
+        videoUrl: VIDEO_URLS[2],
         likes: 654, views: 18700, commissionPct: 12, tags: serializeTags(['accesorios', 'edc', 'review']),
         creatorId: mati.id, productId: 'prod_003',
       },

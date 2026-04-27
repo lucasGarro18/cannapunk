@@ -26,7 +26,7 @@ function getUpload() {
 }
 
 const VIDEO_INCLUDE = {
-  creator: { select: { id: true, name: true, username: true, avatar: true } },
+  creator: { select: { id: true, name: true, username: true, avatar: true, roles: true } },
   product: true,
 }
 

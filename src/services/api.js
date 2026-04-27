@@ -104,6 +104,7 @@ export const ordersApi = {
   getDelivery: ()            => http.get('/orders/delivery'),
   getSeller:   ()            => http.get('/orders/seller'),
   advanceStatus: (id, status) => http.patch(`/orders/${id}/status`, { status }),
+  cancel:        (id)         => http.patch(`/orders/${id}/cancel`),
 }
 
 // ----- Chat -----
@@ -142,6 +143,15 @@ export const reviewsApi = {
 // ----- Referrals -----
 export const referralsApi = {
   getSummary: () => http.get('/referrals'),
+}
+
+// ----- Coupons -----
+export const couponsApi = {
+  validate: (code, orderTotal) => http.post('/coupons/validate', { code, orderTotal }),
+  getAll:   ()                 => http.get('/coupons'),
+  create:   (data)             => http.post('/coupons', data),
+  toggle:   (id, active)       => http.patch(`/coupons/${id}`, { active }),
+  delete:   (id)               => http.delete(`/coupons/${id}`),
 }
 
 // ----- Admin -----

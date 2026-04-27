@@ -46,7 +46,7 @@ export default function SearchPage() {
   const videos = useMemo(() =>
     allVideos.filter(v =>
       v.title.toLowerCase().includes(query) ||
-      v.creator.username.toLowerCase().includes(query)
+      v.creator?.username.toLowerCase().includes(query)
     ), [query, allVideos])
 
   const totalResults = products.length + creators.length + videos.length

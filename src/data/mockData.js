@@ -78,47 +78,56 @@ export const mockCreators = [
     category: 'Electronica' },
 ]
 
+const SAMPLE_VIDEOS = [
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+]
+
 export const mockVideos = [
   {
     id: 'v1',
     title: 'Review HONESTA de los auriculares Punk Pro — ¿Vale la pena gastar $45k?',
     thumbnailUrl: 'https://picsum.photos/seed/vid1/400/700',
-    videoUrl: null, creator: mockCreators[0], product: mockProducts[0],
+    videoUrl: SAMPLE_VIDEOS[0], creator: mockCreators[0], product: mockProducts[0],
     likes: 4500, views: 23400, commissionPct: 8, createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
   },
   {
     id: 'v2',
     title: 'Unboxing Street Runner V2 — La mejor zapatilla urbana de 2024',
     thumbnailUrl: 'https://picsum.photos/seed/vid2/400/700',
-    videoUrl: null, creator: mockCreators[1], product: mockProducts[2],
+    videoUrl: SAMPLE_VIDEOS[1], creator: mockCreators[1], product: mockProducts[2],
     likes: 8900, views: 67000, commissionPct: 6, createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
   },
   {
     id: 'v3',
     title: 'Mi setup 2024 con la mochila Tactical EDC | EDC completo',
     thumbnailUrl: 'https://picsum.photos/seed/vid3/400/700',
-    videoUrl: null, creator: mockCreators[2], product: mockProducts[3],
+    videoUrl: SAMPLE_VIDEOS[2], creator: mockCreators[2], product: mockProducts[3],
     likes: 12000, views: 98000, commissionPct: 10, createdAt: new Date(Date.now() - 86400000).toISOString(),
   },
   {
     id: 'v4',
     title: 'La remera oversized más cómoda que tuve | Neon Edition review',
     thumbnailUrl: 'https://picsum.photos/seed/vid4/400/700',
-    videoUrl: null, creator: mockCreators[0], product: mockProducts[1],
+    videoUrl: SAMPLE_VIDEOS[3], creator: mockCreators[0], product: mockProducts[1],
     likes: 3200, views: 15600, commissionPct: 12, createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
   },
   {
     id: 'v5',
     title: 'Teclado mecánico 65% — El mejor para programadores y gamers',
     thumbnailUrl: 'https://picsum.photos/seed/vid5/400/700',
-    videoUrl: null, creator: mockCreators[2], product: mockProducts[4],
+    videoUrl: SAMPLE_VIDEOS[4], creator: mockCreators[2], product: mockProducts[4],
     likes: 6700, views: 44000, commissionPct: 7, createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
   },
   {
     id: 'v6',
     title: 'Cargo pants Y2K — Cómo combinarlos | OOTD Punk',
     thumbnailUrl: 'https://picsum.photos/seed/vid6/400/700',
-    videoUrl: null, creator: mockCreators[1], product: mockProducts[5],
+    videoUrl: SAMPLE_VIDEOS[5], creator: mockCreators[1], product: mockProducts[5],
     likes: 2100, views: 9800, commissionPct: 14, createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
   },
 ]

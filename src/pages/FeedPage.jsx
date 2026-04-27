@@ -239,7 +239,7 @@ export default function FeedPage() {
 
   const videos = useMemo(() => {
     if (activeCat === 'Para ti')   return allVideos
-    if (activeCat === 'Siguiendo') return allVideos.filter(v => followedUsers.includes(v.creator.username))
+    if (activeCat === 'Siguiendo') return allVideos.filter(v => followedUsers.includes(v.creator?.username))
     return allVideos.filter(v => v.product?.category === activeCat)
   }, [allVideos, activeCat, followedUsers])
 

@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   RiArrowLeftLine, RiMapPinLine, RiShoppingBag3Line,
   RiCheckLine, RiLockLine, RiArrowRightLine, RiAddLine,
-  RiBookmarkLine,
+  RiBookmarkLine, RiCoupon3Line, RiCloseLine,
 } from 'react-icons/ri'
 import toast from 'react-hot-toast'
 import { useMutation } from 'react-query'
 import { useCartStore } from '@/store/cartStore'
 import { useAddressStore } from '@/store/addressStore'
-import { mpApi } from '@/services/api'
+import { mpApi, couponsApi } from '@/services/api'
 import { formatCurrency } from '@/utils/format'
 import Spinner from '@/components/ui/Spinner'
 import clsx from 'clsx'
@@ -37,17 +37,32 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState(null)
   const [saveAddr, setSaveAddr] = useState(false)
   const [selectedSaved, setSelectedSaved] = useState(null)
+  const [couponCode, setCouponCode] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState(null) // { coupon, discount }
   const { items, clearCart, referrerId } = useCartStore()
   const { addresses, add: addAddress } = useAddressStore()
   const navigate   = useNavigate()
   const [searchParams] = useSearchParams()
-  const total = items.reduce((acc, i) => acc + i.product.price * i.qty, 0)
-  const count = items.reduce((acc, i) => acc + i.qty, 0)
+  const subtotal = items.reduce((acc, i) => acc + i.product.price * i.qty, 0)
+  const discount = appliedCoupon?.discount ?? 0
+  const total    = subtotal - discount
+  const count    = items.reduce((acc, i) => acc + i.qty, 0)
 
   const goTo = (next) => {
     setDir(next > step ? 1 : -1)
     setStep(next)
   }
+
+  const { mutate: validateCoupon, isLoading: validatingCoupon } = useMutation(
+    () => couponsApi.validate(couponCode.trim().toUpperCase(), subtotal),
+    {
+      onSuccess: (data) => {
+        setAppliedCoupon(data)
+        toast.success(`Cupón aplicado — ahorrás ${formatCurrency(data.discount)}`)
+      },
+      onError: (err) => toast.error(err?.response?.data?.error ?? 'Cupón inválido'),
+    },
+  )
 
   const { mutate: startCheckout, isLoading: loading } = useMutation(
     (data) => mpApi.createCheckout(data),
@@ -109,7 +124,8 @@ export default function CheckoutPage() {
     startCheckout({
       items:      items.map(i => ({ productId: i.product.id, qty: i.qty })),
       address,
-      referrerId: referrerId ?? undefined,
+      referrerId:  referrerId ?? undefined,
+      couponCode:  appliedCoupon?.coupon.code ?? undefined,
     })
   }
 
@@ -363,9 +379,64 @@ export default function CheckoutPage() {
                     <p className="text-sm font-bold flex-shrink-0">{formatCurrency(product.price * qty)}</p>
                   </div>
                 ))}
-                <div className="flex justify-between items-center p-4">
-                  <span className="text-sm" style={{ color: '#52525b' }}>Total</span>
-                  <span className="text-lg font-bold">{formatCurrency(total)}</span>
+                {/* Cupón */}
+                <div className="p-4 space-y-3" style={{ borderBottom: '1px solid #27272a' }}>
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between rounded-xl px-3 py-2.5"
+                         style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                      <div className="flex items-center gap-2">
+                        <RiCoupon3Line size={15} style={{ color: '#f59e0b' }} />
+                        <span className="text-sm font-medium" style={{ color: '#f59e0b' }}>
+                          {appliedCoupon.coupon.code}
+                        </span>
+                        <span className="text-xs" style={{ color: '#78716c' }}>
+                          − {formatCurrency(appliedCoupon.discount)}
+                        </span>
+                      </div>
+                      <button onClick={() => { setAppliedCoupon(null); setCouponCode('') }}
+                              className="text-gray-500 hover:text-gray-300 transition-colors">
+                        <RiCloseLine size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <RiCoupon3Line className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={15} style={{ pointerEvents: 'none' }} />
+                        <input
+                          value={couponCode}
+                          onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                          onKeyDown={e => e.key === 'Enter' && couponCode && validateCoupon()}
+                          placeholder="Código de descuento"
+                          className="input text-sm"
+                          style={{ paddingLeft: '2.25rem' }}
+                        />
+                      </div>
+                      <button
+                        onClick={() => couponCode && validateCoupon()}
+                        disabled={!couponCode || validatingCoupon}
+                        className="btn-secondary px-4 text-sm flex-shrink-0"
+                      >
+                        {validatingCoupon ? <Spinner size="sm" /> : 'Aplicar'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 space-y-1.5">
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: '#52525b' }}>Subtotal</span>
+                    <span>{formatCurrency(subtotal)}</span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span style={{ color: '#f59e0b' }}>Descuento</span>
+                      <span style={{ color: '#f59e0b' }}>− {formatCurrency(discount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold pt-1.5" style={{ borderTop: '1px solid #27272a' }}>
+                    <span>Total</span>
+                    <span className="text-lg">{formatCurrency(total)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -390,8 +461,14 @@ export default function CheckoutPage() {
                 <div className="rounded-xl p-4 space-y-2" style={{ background: '#18181c', border: '1px solid #27272a' }}>
                   <div className="flex justify-between text-sm">
                     <span style={{ color: '#52525b' }}>Subtotal ({count} {count === 1 ? 'producto' : 'productos'})</span>
-                    <span>{formatCurrency(total)}</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span style={{ color: '#f59e0b' }}>Cupón {appliedCoupon.coupon.code}</span>
+                      <span style={{ color: '#f59e0b' }}>− {formatCurrency(discount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span style={{ color: '#52525b' }}>Envío</span>
                     <span className="text-brand-neon font-medium">Gratis</span>

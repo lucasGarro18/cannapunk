@@ -3,6 +3,7 @@ const { z }  = require('zod')
 const prisma          = require('../db')
 const { requireAuth } = require('../middleware/auth')
 const { serializeAddress, fixOrders, fixOrder } = require('../sqlite')
+const { notify }      = require('../notify')
 
 const ORDER_INCLUDE = {
   items: {
@@ -146,6 +147,47 @@ router.post('/', requireAuth, async (req, res) => {
   })
 
   res.status(201).json(order)
+})
+
+// PATCH /api/orders/:id/cancel — el comprador cancela su pedido
+router.patch('/:id/cancel', requireAuth, async (req, res) => {
+  const order = await prisma.order.findUnique({
+    where:   { id: req.params.id },
+    include: { items: { include: { product: true } } },
+  })
+  if (!order) return res.status(404).json({ error: 'Pedido no encontrado' })
+  if (order.buyerId !== req.user.id) return res.status(403).json({ error: 'Sin permiso' })
+  if (order.status !== 'processing') {
+    return res.status(400).json({ error: 'Solo se pueden cancelar pedidos en preparación' })
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.order.update({ where: { id: order.id }, data: { status: 'cancelled' } })
+
+    // Restore stock
+    for (const item of order.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data:  { stock: { increment: item.qty }, salesCount: { decrement: item.qty } },
+      })
+    }
+
+    // Void pending commissions
+    await tx.commission.updateMany({
+      where: { orderId: order.id, status: 'pending' },
+      data:  { status: 'cancelled' },
+    })
+  })
+
+  await notify(prisma, {
+    userId:    req.user.id,
+    type:      'order',
+    title:     'Pedido cancelado',
+    body:      `Tu pedido ${order.id} fue cancelado exitosamente.`,
+    actionUrl: '/orders',
+  })
+
+  res.json({ id: order.id, status: 'cancelled' })
 })
 
 // PATCH /api/orders/:id/status — repartidor avanza el estado

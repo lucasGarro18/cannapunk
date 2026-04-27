@@ -13,14 +13,26 @@ const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://
 let socketInstance = null
 
 function getSocket(token) {
-  if (!socketInstance || !socketInstance.connected) {
+  if (!socketInstance) {
     socketInstance = io(SOCKET_URL, {
-      auth: { token },
-      autoConnect: true,
-      reconnectionDelay: 1000,
+      auth:                { token },
+      autoConnect:         true,
+      reconnectionDelay:   1000,
+      reconnectionAttempts: 10,
     })
+  } else if (socketInstance.auth?.token !== token) {
+    // Token cambió (re-login) — actualizar y reconectar si está desconectado
+    socketInstance.auth = { token }
+    if (!socketInstance.connected) socketInstance.connect()
   }
   return socketInstance
+}
+
+function destroySocket() {
+  if (socketInstance) {
+    socketInstance.disconnect()
+    socketInstance = null
+  }
 }
 
 // ── Mock data builders ────────────────────────────────────────
@@ -68,15 +80,15 @@ export function useChatSocket() {
   const socketRef = useRef(null)
 
   useEffect(() => {
-    if (!token) return
+    if (!token) {
+      destroySocket()
+      return
+    }
     const socket = getSocket(token)
     socketRef.current = socket
 
-    socket.on('conversation_updated', () => {
-      qc.invalidateQueries(['conversations'])
-    })
-
-    socket.on('new_notification', (notif) => {
+    const onConvUpdated  = ()             => qc.invalidateQueries(['conversations'])
+    const onNotif        = (notif)        => {
       addNotif(notif)
       qc.setQueryData(['notifications'], (old) => [notif, ...(old ?? [])])
       const icons = { commission: '💰', order: '📦', follower: '👤', sale: '🛍️' }
@@ -85,18 +97,23 @@ export function useChatSocket() {
         duration: 5000,
         style: { background: '#1c1c1f', color: '#fff', border: '1px solid rgba(245,158,11,0.3)' },
       })
-    })
+    }
+    const onOnline       = ({ userId })   => setOnline(userId)
+    const onOffline      = ({ userId })   => setOffline(userId)
+    const onOnlineUsers  = (userIds)      => setOnlineUsers(userIds)
 
-    socket.on('user_online',   ({ userId }) => setOnline(userId))
-    socket.on('user_offline',  ({ userId }) => setOffline(userId))
-    socket.on('online_users',  (userIds)   => setOnlineUsers(userIds))
+    socket.on('conversation_updated', onConvUpdated)
+    socket.on('new_notification',     onNotif)
+    socket.on('user_online',          onOnline)
+    socket.on('user_offline',         onOffline)
+    socket.on('online_users',         onOnlineUsers)
 
     return () => {
-      socket.off('conversation_updated')
-      socket.off('new_notification')
-      socket.off('user_online')
-      socket.off('user_offline')
-      socket.off('online_users')
+      socket.off('conversation_updated', onConvUpdated)
+      socket.off('new_notification',     onNotif)
+      socket.off('user_online',          onOnline)
+      socket.off('user_offline',         onOffline)
+      socket.off('online_users',         onOnlineUsers)
     }
   }, [token, qc, addNotif, setOnline, setOffline, setOnlineUsers])
 
@@ -172,13 +189,14 @@ export function useMessages(conversationId) {
       try {
         return await chatApi.getMessages(conversationId)
       } catch (err) {
-        if (!err.response) return buildMockMessages(userId)
+        // Fallback en error de red O si la conv es mock (404 esperado)
+        if (!err.response || err.response?.status === 404) return buildMockMessages(userId)
         throw err
       }
     },
     {
-      enabled: !!conversationId,
-      staleTime: 30_000,
+      enabled:              !!conversationId,
+      staleTime:            30_000,
       refetchOnWindowFocus: false,
     },
   )
@@ -228,24 +246,25 @@ export function useConversationSocket(conversationId, onNewMessage) {
     socketRef.current = socket
 
     const joinRoom = () => socket.emit('join_conversation', conversationId)
-    const onReconnect = () => {
-      joinRoom()
-      qc.invalidateQueries(['messages', conversationId])
-    }
+
+    const onReconnect   = () => { joinRoom(); qc.invalidateQueries(['messages', conversationId]) }
+    const onDeleted     = ({ messageId }) => onNewMessage?.({ __deleted: true, messageId })
+    const onTyping      = ()              => onNewMessage?.({ __typing: true })
+    const onStopTyping  = ()              => onNewMessage?.({ __stopTyping: true })
 
     joinRoom()
     socket.on('new_message',     onNewMessage)
-    socket.on('message_deleted', ({ messageId }) => onNewMessage?.({ __deleted: true, messageId }))
-    socket.on('typing',          ({ userId }) => onNewMessage?.({ __typing: true, userId }))
-    socket.on('stop_typing',     ({ userId }) => onNewMessage?.({ __stopTyping: true, userId }))
+    socket.on('message_deleted', onDeleted)
+    socket.on('typing',          onTyping)
+    socket.on('stop_typing',     onStopTyping)
     socket.on('connect',         onReconnect)
 
     return () => {
       socket.emit('leave_conversation', conversationId)
       socket.off('new_message',     onNewMessage)
-      socket.off('message_deleted')
-      socket.off('typing')
-      socket.off('stop_typing')
+      socket.off('message_deleted', onDeleted)
+      socket.off('typing',          onTyping)
+      socket.off('stop_typing',     onStopTyping)
       socket.off('connect',         onReconnect)
     }
   }, [token, conversationId, onNewMessage, qc])

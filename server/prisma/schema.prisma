@@ -177,6 +177,7 @@ model PendingOrder {
   items      String
   address    String
   referrerId String?
+  couponCode String?
   total      Int
   createdAt  DateTime @default(now())
 }
@@ -204,6 +205,19 @@ model Notification {
 
   user      User     @relation(fields: [userId], references: [id])
   userId    String
+}
+
+model Coupon {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  type        String   @default("percent") // "percent" | "fixed"
+  value       Int
+  minOrder    Int      @default(0)
+  maxUses     Int?
+  usedCount   Int      @default(0)
+  active      Boolean  @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
 }
 
 model Review {

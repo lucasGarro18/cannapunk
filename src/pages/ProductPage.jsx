@@ -1,10 +1,10 @@
 ﻿import { useState } from 'react'
-import { useParams, useSearchParams, Link } from 'react-router-dom'
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   RiStarFill, RiShoppingBag3Line, RiVideoLine, RiShareForwardLine,
   RiArrowLeftLine, RiCheckLine, RiStoreLine, RiArrowRightLine,
-  RiHeartLine, RiHeartFill, RiFlashlightLine, RiMessage3Line,
+  RiHeartLine, RiHeartFill, RiFlashlightLine, RiMessage3Line, RiFlashlightFill,
 } from 'react-icons/ri'
 import toast from 'react-hot-toast'
 import VideoCard from '@/components/video/VideoCard'
@@ -26,6 +26,7 @@ import { ordersApi } from '@/services/api'
 export default function ProductPage() {
   const { id }           = useParams()
   const [searchParams]   = useSearchParams()
+  const navigate         = useNavigate()
   const referrerId       = searchParams.get('ref')
   const { data: product, isLoading } = useProduct(id)
   const { data: videos = [] }        = useProductVideos(id)
@@ -77,6 +78,11 @@ export default function ProductPage() {
     for (let i = 0; i < qty; i++) addItem(product, referrerId ?? null)
     toast.success(`${product.name} agregado al carrito`)
     openCart()
+  }
+
+  const handleBuyNow = () => {
+    for (let i = 0; i < qty; i++) addItem(product, referrerId ?? null)
+    navigate('/checkout')
   }
 
   const handleShare = async () => {
@@ -210,10 +216,16 @@ export default function ProductPage() {
               </p>
             </div>
 
-            <button onClick={handleAddToCart} className="btn-primary w-full py-4 text-base shadow-neon gap-2">
-              <RiShoppingBag3Line size={20} />
-              Agregar al carrito
-            </button>
+            <div className="flex gap-2">
+              <button onClick={handleAddToCart} className="btn-secondary flex-1 py-4 text-base gap-2">
+                <RiShoppingBag3Line size={18} />
+                Agregar al carrito
+              </button>
+              <button onClick={handleBuyNow} className="btn-primary flex-1 py-4 text-base gap-2">
+                <RiFlashlightFill size={18} />
+                Comprar ahora
+              </button>
+            </div>
             <div className="flex gap-2">
               <button onClick={handleShare} className="btn-secondary flex-1 py-3 gap-2">
                 {shared ? <RiCheckLine size={16} /> : <RiShareForwardLine size={16} />}

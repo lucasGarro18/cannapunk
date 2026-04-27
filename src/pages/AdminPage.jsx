@@ -5,11 +5,12 @@ import {
   RiShieldUserLine, RiBarChartLine, RiUserLine, RiMoneyDollarCircleLine,
   RiShoppingBag3Line, RiCheckLine, RiSearchLine, RiArrowRightLine,
   RiVideoLine, RiRefreshLine, RiBankLine, RiTimeLine,
-  RiArrowLeftLine,
+  RiArrowLeftLine, RiCoupon3Line, RiAddLine, RiDeleteBin6Line,
+  RiToggleLine, RiToggleFill,
 } from 'react-icons/ri'
 import Avatar from '@/components/ui/Avatar'
 import Spinner from '@/components/ui/Spinner'
-import { adminApi } from '@/services/api'
+import { adminApi, couponsApi } from '@/services/api'
 import { formatCurrency } from '@/utils/format'
 
 function Pagination({ page, pages, total, onPage }) {
@@ -56,6 +57,7 @@ const TABS = [
   { id: 'commissions',  label: 'Comisiones',  icon: RiMoneyDollarCircleLine },
   { id: 'withdrawals',  label: 'Retiros',     icon: RiBankLine             },
   { id: 'orders',       label: 'Pedidos',     icon: RiShoppingBag3Line     },
+  { id: 'coupons',      label: 'Cupones',     icon: RiCoupon3Line          },
 ]
 
 const ALL_ROLES = ['buyer', 'creator', 'seller', 'delivery', 'admin']
@@ -531,6 +533,170 @@ function OrdersTab() {
   )
 }
 
+function CouponsTab() {
+  const qc = useQueryClient()
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ code: '', type: 'percent', value: '', minOrder: '', maxUses: '', expiresAt: '' })
+
+  const { data: coupons = [], isLoading } = useQuery(['admin', 'coupons'], () => couponsApi.getAll())
+
+  const { mutate: create, isLoading: creating } = useMutation(
+    () => couponsApi.create({
+      code:      form.code.trim(),
+      type:      form.type,
+      value:     parseInt(form.value),
+      minOrder:  form.minOrder ? parseInt(form.minOrder) : 0,
+      maxUses:   form.maxUses ? parseInt(form.maxUses) : null,
+      expiresAt: form.expiresAt || null,
+    }),
+    {
+      onSuccess: () => {
+        toast.success('Cupón creado')
+        qc.invalidateQueries(['admin', 'coupons'])
+        setShowForm(false)
+        setForm({ code: '', type: 'percent', value: '', minOrder: '', maxUses: '', expiresAt: '' })
+      },
+      onError: (err) => toast.error(err?.response?.data?.error ?? 'Error al crear cupón'),
+    },
+  )
+
+  const { mutate: toggle } = useMutation(
+    ({ id, active }) => couponsApi.toggle(id, active),
+    {
+      onSuccess: () => qc.invalidateQueries(['admin', 'coupons']),
+      onError: () => toast.error('Error'),
+    },
+  )
+
+  const { mutate: remove } = useMutation(
+    (id) => couponsApi.delete(id),
+    {
+      onSuccess: () => { toast.success('Cupón eliminado'); qc.invalidateQueries(['admin', 'coupons']) },
+      onError: () => toast.error('Error'),
+    },
+  )
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">{coupons.length} cupones</p>
+        <button onClick={() => setShowForm(v => !v)} className="btn-secondary flex items-center gap-1.5 text-sm py-2 px-3">
+          <RiAddLine size={15} /> Nuevo cupón
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="card p-4 space-y-4" style={{ border: '1px solid rgba(245,158,11,0.2)' }}>
+          <p className="text-sm font-semibold">Crear cupón</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 sm:col-span-1">
+              <label className="label block mb-1">Código</label>
+              <input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
+                     placeholder="PUNK20" className="input text-sm uppercase" />
+            </div>
+            <div>
+              <label className="label block mb-1">Tipo</label>
+              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="input text-sm">
+                <option value="percent">Porcentaje (%)</option>
+                <option value="fixed">Fijo ($)</option>
+              </select>
+            </div>
+            <div>
+              <label className="label block mb-1">{form.type === 'percent' ? 'Descuento (%)' : 'Descuento ($)'}</label>
+              <input value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
+                     placeholder={form.type === 'percent' ? '20' : '5000'} type="number" min="1" className="input text-sm" />
+            </div>
+            <div>
+              <label className="label block mb-1">Pedido mínimo ($)</label>
+              <input value={form.minOrder} onChange={e => setForm(f => ({ ...f, minOrder: e.target.value }))}
+                     placeholder="0" type="number" min="0" className="input text-sm" />
+            </div>
+            <div>
+              <label className="label block mb-1">Usos máximos</label>
+              <input value={form.maxUses} onChange={e => setForm(f => ({ ...f, maxUses: e.target.value }))}
+                     placeholder="Sin límite" type="number" min="1" className="input text-sm" />
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <label className="label block mb-1">Vence el</label>
+              <input value={form.expiresAt} onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
+                     type="datetime-local" className="input text-sm" />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setShowForm(false)} className="btn-ghost text-sm">Cancelar</button>
+            <button onClick={() => create()} disabled={creating || !form.code || !form.value} className="btn-primary text-sm py-2 px-4">
+              {creating ? <Spinner size="sm" /> : 'Crear cupón'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isLoading && <div className="flex justify-center py-8"><Spinner /></div>}
+
+      <div className="space-y-2">
+        {coupons.map(c => (
+          <div key={c.id} className="card p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                     style={{ background: c.active ? 'rgba(245,158,11,0.1)' : 'rgba(63,63,70,0.4)' }}>
+                  <RiCoupon3Line size={17} style={{ color: c.active ? '#f59e0b' : '#52525b' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono font-bold text-sm">{c.code}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ background: c.type === 'percent' ? 'rgba(96,165,250,0.1)' : 'rgba(52,211,153,0.1)',
+                                   color: c.type === 'percent' ? '#60a5fa' : '#34d399',
+                                   border: `1px solid ${c.type === 'percent' ? 'rgba(96,165,250,0.2)' : 'rgba(52,211,153,0.2)'}` }}>
+                      {c.type === 'percent' ? `${c.value}%` : formatCurrency(c.value)}
+                    </span>
+                    {!c.active && (
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+                        Inactivo
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-3 mt-1 text-xs text-gray-600">
+                    {c.minOrder > 0 && <span>Mín. {formatCurrency(c.minOrder)}</span>}
+                    <span>{c.usedCount} usos{c.maxUses ? ` / ${c.maxUses}` : ''}</span>
+                    {c.expiresAt && (
+                      <span style={{ color: new Date(c.expiresAt) < new Date() ? '#f87171' : '#6b7280' }}>
+                        Vence {new Date(c.expiresAt).toLocaleDateString('es-AR')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button onClick={() => toggle({ id: c.id, active: !c.active })}
+                        className="btn-ghost p-2 rounded-lg transition-colors"
+                        title={c.active ? 'Desactivar' : 'Activar'}>
+                  {c.active
+                    ? <RiToggleFill size={20} style={{ color: '#f59e0b' }} />
+                    : <RiToggleLine size={20} style={{ color: '#52525b' }} />}
+                </button>
+                <button onClick={() => remove(c.id)}
+                        className="btn-ghost p-2 rounded-lg transition-colors hover:text-red-400"
+                        title="Eliminar">
+                  <RiDeleteBin6Line size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {!isLoading && coupons.length === 0 && (
+        <div className="text-center py-16 text-gray-600">
+          <RiCoupon3Line size={32} className="mx-auto opacity-30 mb-3" />
+          <p className="text-sm">No hay cupones. Creá el primero.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AdminPage() {
   const [tab, setTab] = useState('stats')
 
@@ -561,6 +727,7 @@ export default function AdminPage() {
       {tab === 'commissions'  && <CommissionsTab />}
       {tab === 'withdrawals'  && <WithdrawalsTab />}
       {tab === 'orders'       && <OrdersTab />}
+      {tab === 'coupons'      && <CouponsTab />}
     </div>
   )
 }

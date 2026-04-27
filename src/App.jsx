@@ -68,10 +68,10 @@ export default function App() {
           <Route path="/search"            element={<SearchPage />} />
           <Route path="/creators"          element={<CreatorsPage />} />
           <Route path="/wishlist"          element={<WishlistPage />} />
+          <Route path="/notifications"     element={<NotificationsPage />} />
 
           {/* Protected */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/upload"    element={<UploadPage />} />
             <Route path="/wallet"    element={<WalletPage />} />
             <Route path="/orders"    element={<OrdersPage />} />

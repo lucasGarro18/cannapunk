@@ -21,6 +21,7 @@ const chatRoutes      = require('./routes/chat')
 const referralRoutes  = require('./routes/referrals')
 const adminRoutes     = require('./routes/admin')
 const reviewRoutes    = require('./routes/reviews')
+const couponRoutes    = require('./routes/coupons')
 
 const app    = express()
 const server = http.createServer(app)
@@ -46,6 +47,7 @@ app.use('/api/chat',          chatRoutes)
 app.use('/api/referrals',    referralRoutes)
 app.use('/api/admin',        adminRoutes)
 app.use('/api/reviews',      reviewRoutes)
+app.use('/api/coupons',      couponRoutes)
 
 app.get('/api/health', (_, res) => res.json({ ok: true }))
 
