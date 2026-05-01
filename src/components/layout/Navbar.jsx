@@ -44,9 +44,9 @@ export default function Navbar() {
                      borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-3">
 
-        {/* Logo */}
+        {/* Logo con partículas al hover */}
         <Link to="/" className="flex-shrink-0 mr-2">
-          <Logo />
+          <Logo withParticles />
         </Link>
 
         {isAuthenticated ? (

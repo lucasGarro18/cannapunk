@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from 'react-query'
 import { HelmetProvider } from 'react-helmet-async'
 import { Toaster } from 'react-hot-toast'
 import App from './App'
+import CustomCursor  from './components/ui/CustomCursor'
+import LoadingScreen from './components/ui/LoadingScreen'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -23,6 +25,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <App />
+        <LoadingScreen />
+        <CustomCursor />
         <Toaster
           position="top-right"
           toastOptions={{

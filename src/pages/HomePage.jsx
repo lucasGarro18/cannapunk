@@ -1,5 +1,7 @@
-﻿import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+﻿import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import CannabisLeaf from '@/components/ui/CannabisLeaf'
 import {
   RiArrowRightLine, RiVideoLine, RiMoneyDollarCircleLine,
   RiShoppingBag3Line, RiShieldCheckLine, RiFlashlightLine,
@@ -46,6 +48,44 @@ const QUICK_LINKS = [
   { to: '/earnings',  icon: RiMoneyDollarCircleLine, label: 'Ganancias', accent: '#22c55e' },
   { to: '/orders',    icon: RiTruckLine,            label: 'Pedidos',    accent: '#f87171' },
 ]
+
+// ── Hoja parallax 3D que sigue el mouse ──────────────────────
+function ParallaxLeaf() {
+  const mx = useMotionValue(0)
+  const my = useMotionValue(0)
+  const sx = useSpring(mx, { stiffness: 40, damping: 18 })
+  const sy = useSpring(my, { stiffness: 40, damping: 18 })
+  const rotateX  = useTransform(sy, [-1, 1], [18, -18])
+  const rotateY  = useTransform(sx, [-1, 1], [-18, 18])
+  const tx       = useTransform(sx, [-1, 1], [-28, 28])
+  const ty       = useTransform(sy, [-1, 1], [-18, 18])
+
+  useEffect(() => {
+    const move = (e) => {
+      mx.set((e.clientX / window.innerWidth)  * 2 - 1)
+      my.set((e.clientY / window.innerHeight) * 2 - 1)
+    }
+    window.addEventListener('mousemove', move, { passive: true })
+    return () => window.removeEventListener('mousemove', move)
+  }, [mx, my])
+
+  return (
+    <motion.div
+      style={{
+        rotateX, rotateY, x: tx, y: ty,
+        transformPerspective: 900,
+        position: 'absolute',
+        top: '50%', left: '50%',
+        marginLeft: -200, marginTop: -200,
+        pointerEvents: 'none',
+        opacity: 0.055,
+        filter: 'blur(0.5px)',
+      }}
+    >
+      <CannabisLeaf size={400} color="#00e676" />
+    </motion.div>
+  )
+}
 
 const stagger = {
   show: { transition: { staggerChildren: 0.07 } },
@@ -239,6 +279,8 @@ export default function HomePage() {
              style={{ background: 'radial-gradient(ellipse, rgba(34,197,94,0.12) 0%, rgba(34,197,94,0.04) 45%, transparent 72%)', filter: 'blur(40px)' }} />
         {/* Meteors */}
         <Meteors count={14} />
+        {/* Hoja gigante parallax 3D */}
+        <ParallaxLeaf />
         {/* Línea divisoria inferior */}
         <div className="absolute bottom-0 left-0 right-0 gradient-line" />
 
