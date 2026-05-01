@@ -64,7 +64,7 @@ export default function ReferralsPage() {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: 'Unite a CannaPunk',
+          title: 'Unite a Cannapont',
           text: `Comprá, mostrá y ganá comisiones automáticas. Usá mi link:`,
           url: referralLink,
         })

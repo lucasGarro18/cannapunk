@@ -34,6 +34,6 @@ export const useCartStore = create(
 
       clearCart: () => set({ items: [], referrerId: null }),
     }),
-    { name: 'cannapunk-cart' },
+    { name: 'cannapont-cart' },
   ),
 )

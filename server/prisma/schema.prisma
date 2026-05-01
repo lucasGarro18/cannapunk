@@ -129,6 +129,8 @@ model Commission {
   videoId   String
   order     Order   @relation(fields: [orderId],   references: [id])
   orderId   String
+
+  @@unique([videoId, orderId])
 }
 
 model Follow {

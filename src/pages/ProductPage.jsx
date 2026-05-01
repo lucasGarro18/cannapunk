@@ -22,6 +22,7 @@ import { useWishlistStore } from '@/store/wishlistStore'
 import StarRating from '@/components/ui/StarRating'
 import { useQuery } from 'react-query'
 import { ordersApi } from '@/services/api'
+import SEO from '@/components/ui/SEO'
 
 export default function ProductPage() {
   const { id }           = useParams()
@@ -112,6 +113,13 @@ export default function ProductPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16,1,0.3,1] }}
     >
+      <SEO
+        title={product.name}
+        description={product.description?.slice(0, 160)}
+        image={product.imageUrl}
+        url={`https://cannapont.vercel.app/product/${product.id}`}
+        type="product"
+      />
       {/* Back */}
       <Link to="/market" className="btn-ghost -ml-2 flex items-center gap-1.5 w-fit text-sm mb-6">
         <RiArrowLeftLine size={16} /> Marketplace

@@ -31,6 +31,6 @@ export const useSocialStore = create(
       isLiked:     (videoId)  => get().likedVideos.includes(videoId),
       isFollowing: (username) => get().followedUsers.includes(username),
     }),
-    { name: 'cannapunk-social' },
+    { name: 'cannapont-social' },
   ),
 )

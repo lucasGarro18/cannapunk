@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
+import { HelmetProvider } from 'react-helmet-async'
 import { Toaster } from 'react-hot-toast'
 import App from './App'
 import './index.css'
@@ -18,6 +19,7 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <App />
@@ -32,7 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               fontSize:   '0.875rem',
             },
             success: {
-              iconTheme: { primary: '#f59e0b', secondary: '#0c0c0e' },
+              iconTheme: { primary: '#22c55e', secondary: '#0c0c0e' },
             },
             error: {
               iconTheme: { primary: '#f87171', secondary: '#080b08' },
@@ -41,5 +43,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         />
       </BrowserRouter>
     </QueryClientProvider>
+    </HelmetProvider>
   </React.StrictMode>,
 )

@@ -705,7 +705,7 @@ export default function AdminPage() {
       <div>
         <p className="label mb-1">Panel de administración</p>
         <h1 className="section-title" style={{ fontSize: '1.75rem' }}>
-          Control <span className="neon-text">CannaPunk</span>
+          Control <span className="neon-text">Cannapont</span>
         </h1>
       </div>
 

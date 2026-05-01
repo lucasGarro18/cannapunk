@@ -156,7 +156,7 @@ function VideoItem({ video, isActive }) {
       >
         {muted
           ? <RiVolumeMuteLine size={15} style={{ color: 'rgba(255,255,255,0.65)' }} />
-          : <RiVolumeUpLine   size={15} style={{ color: '#f59e0b' }} />
+          : <RiVolumeUpLine   size={15} style={{ color: '#22c55e' }} />
         }
       </button>
 
@@ -186,7 +186,7 @@ function VideoItem({ video, isActive }) {
               className="flex-shrink-0 text-xs font-semibold rounded-full px-3 py-1 transition-all"
               style={following
                 ? { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.12)' }
-                : { background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.28)' }
+                : { background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.28)' }
               }
             >
               {following ? 'Siguiendo' : '+ Seguir'}
@@ -235,7 +235,7 @@ function VideoItem({ video, isActive }) {
             onClick={e => e.stopPropagation()}
             className="flex items-center gap-3 rounded-2xl p-3 transition-all"
             style={{ background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(255,255,255,0.07)' }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(245,158,11,0.32)'}
+            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(34,197,94,0.32)'}
             onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'}
           >
             <img src={product.imageUrl} alt={product.name}
@@ -245,23 +245,23 @@ function VideoItem({ video, isActive }) {
               <p className="text-xs truncate mb-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
                 {product.name}
               </p>
-              <p className="text-base font-bold leading-none" style={{ color: '#f59e0b' }}>
+              <p className="text-base font-bold leading-none" style={{ color: '#22c55e' }}>
                 {formatCurrency(product.price)}
               </p>
             </div>
 
             {commissionPct > 0 && (
               <div className="flex items-center gap-1 rounded-full px-2 py-1 flex-shrink-0"
-                   style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                <RiFlashlightLine size={10} style={{ color: '#f59e0b' }} />
-                <span className="text-[11px] font-bold tabular-nums" style={{ color: '#f59e0b' }}>
+                   style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.22)' }}>
+                <RiFlashlightLine size={10} style={{ color: '#22c55e' }} />
+                <span className="text-[11px] font-bold tabular-nums" style={{ color: '#22c55e' }}>
                   +{commissionPct}%
                 </span>
               </div>
             )}
 
             <div className="flex items-center gap-1.5 rounded-xl px-3 py-2 flex-shrink-0 transition-all"
-                 style={{ background: '#f59e0b' }}>
+                 style={{ background: '#22c55e' }}>
               <RiShoppingBag3Line size={13} style={{ color: '#0c0c0e' }} />
               <span className="text-xs font-bold" style={{ color: '#0c0c0e' }}>Ver</span>
             </div>
@@ -325,7 +325,7 @@ export default function FeedPage() {
               onClick={() => switchCat(cat)}
               className="flex-shrink-0 text-xs font-semibold rounded-full px-3.5 py-1.5 transition-all"
               style={active
-                ? { background: '#f59e0b', color: '#0c0c0e' }
+                ? { background: '#22c55e', color: '#0c0c0e' }
                 : { background: 'rgba(255,255,255,0.05)', color: '#6b7280' }
               }
             >
@@ -344,7 +344,7 @@ export default function FeedPage() {
             {activeCat === 'Siguiendo' ? (
               <>
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                     style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
+                     style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)' }}>
                   <span className="text-2xl">👀</span>
                 </div>
                 <div>
@@ -392,7 +392,7 @@ export default function FeedPage() {
                 style={{
                   width:      '3px',
                   height:      i === activeIdx ? '18px' : '4px',
-                  background:  i === activeIdx ? '#f59e0b' : 'rgba(255,255,255,0.2)',
+                  background:  i === activeIdx ? '#22c55e' : 'rgba(255,255,255,0.18)',
                 }}
               />
             ))}

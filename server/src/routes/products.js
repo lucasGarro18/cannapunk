@@ -1,40 +1,18 @@
 const router = require('express').Router()
 const { z }  = require('zod')
-const path   = require('path')
-const fs     = require('fs')
 const prisma             = require('../db')
 const { requireAuth, optionalAuth } = require('../middleware/auth')
+const { createUpload, genKey, uploadFile } = require('../storage')
 
-// Lazy multer for image uploads
-let imgUpload = null
-function getImgUpload() {
-  if (imgUpload) return imgUpload
-  try {
-    const multer = require('multer')
-    const dest   = path.join(__dirname, '../../../uploads')
-    fs.mkdirSync(dest, { recursive: true })
-    const storage = multer.diskStorage({
-      destination: (_, __, cb) => cb(null, dest),
-      filename:    (_, file, cb) => cb(null, `img_${Date.now()}-${file.originalname.replace(/\s/g, '_')}`),
-    })
-    imgUpload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } })
-  } catch {
-    imgUpload = { single: () => (req, res, next) => next() }
-  }
-  return imgUpload
-}
+const imgUpload = createUpload({ maxMB: 5, filter: (_, f, cb) => cb(null, f.mimetype.startsWith('image/')) })
 
 // POST /api/products/upload-image
-router.post('/upload-image', requireAuth,
-  (req, res, next) => getImgUpload().single('image')(req, res, next),
-  (req, res) => {
-    const url = req.file
-      ? `${process.env.BASE_URL ?? 'http://localhost:4000'}/uploads/${req.file.filename}`
-      : null
-    if (!url) return res.status(400).json({ error: 'No se recibió imagen' })
-    res.json({ url })
-  },
-)
+router.post('/upload-image', requireAuth, imgUpload.single('image'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No se recibió imagen' })
+  const key = genKey('images', req.file.originalname)
+  const url = await uploadFile(req.file.buffer, key, req.file.mimetype)
+  res.json({ url })
+})
 
 // GET /api/products?page=1&limit=20&category=&q=
 router.get('/', optionalAuth, async (req, res) => {

@@ -46,7 +46,7 @@ export function useLogin() {
     ),
     {
       onSuccess: ({ user, token }) => {
-        const savedOb = localStorage.getItem(`cannapunk-ob-${user.email}`) === '1'
+        const savedOb = localStorage.getItem(`cannapont-ob-${user.email}`) === '1'
         const onboardingDone = user.onboardingDone || savedOb
         login({ ...user, onboardingDone }, token)
         toast.success(`Bienvenido, ${user.name}!`)
@@ -71,7 +71,7 @@ export function useRegister() {
     {
       onSuccess: ({ user, token }) => {
         login(user, token)
-        toast.success(`¡Bienvenido a CannaPunk, ${user.name}!`)
+        toast.success(`¡Bienvenido a Cannapont, ${user.name}!`)
         navigate('/onboarding')
       },
       onError: (err) => {

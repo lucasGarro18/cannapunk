@@ -33,6 +33,6 @@ export const useSellerStore = create(
         listings: s.listings.filter(p => p.id !== id),
       })),
     }),
-    { name: 'cannapunk-seller' },
+    { name: 'cannapont-seller' },
   ),
 )

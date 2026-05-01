@@ -67,7 +67,7 @@ export default function ProductCard({ product }) {
             className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center
                        opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0
                        transition-all duration-200 text-brand-dark"
-            style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
+            style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)' }}>
             <RiShoppingBag3Line size={15} />
           </CardItem>
         </CardItem>

@@ -15,7 +15,7 @@ function getTransporter() {
   return _transporter
 }
 
-const FROM = () => process.env.SMTP_FROM ?? `CannaPunk <noreply@cannapunk.com>`
+const FROM = () => process.env.SMTP_FROM ?? `Cannapont <noreply@cannapont.com>`
 
 const ARS = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
@@ -30,10 +30,10 @@ function layout(body) {
 <body style="${BASE_STYLE}">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:32px auto">
     <tr><td style="padding:0 24px">
-      <div style="font-size:22px;font-weight:700;color:#f59e0b;margin-bottom:24px">⚡ CannaPunk</div>
+      <div style="font-size:22px;font-weight:700;color:#f59e0b;margin-bottom:24px">⚡ Cannapont</div>
       ${body}
       <div style="margin-top:32px;padding-top:16px;border-top:1px solid #27272a;font-size:11px;color:#52525b">
-        © ${new Date().getFullYear()} CannaPunk — No respondas este email.
+        © ${new Date().getFullYear()} Cannapont — No respondas este email.
       </div>
     </td></tr>
   </table>
@@ -126,20 +126,20 @@ async function sendWelcome({ to, name }) {
   if (!t) return
 
   const html = layout(`
-    <h1 style="font-size:20px;font-weight:700;margin:0 0 8px">Bienvenido a CannaPunk ⚡</h1>
+    <h1 style="font-size:20px;font-weight:700;margin:0 0 8px">Bienvenido a Cannapont ⚡</h1>
     <p style="color:#a1a1aa;margin:0 0 24px">Hola ${name}, tu cuenta está lista.</p>
 
     <p style="font-size:14px;line-height:1.6;color:#d4d4d8">
       Explorá el marketplace, comprá productos y empezá a ganar comisiones subiendo reviews en video.
     </p>
 
-    ${btnPrimary(`${process.env.CLIENT_URL ?? 'http://localhost:5173'}`, 'Ir a CannaPunk')}
+    ${btnPrimary(`${process.env.CLIENT_URL ?? 'http://localhost:5173'}`, 'Ir a Cannapont')}
   `)
 
   await t.sendMail({
     from:    FROM(),
     to,
-    subject: 'Bienvenido a CannaPunk',
+    subject: 'Bienvenido a Cannapont',
     html,
   })
 }

@@ -77,7 +77,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
 
   // Si hay descuento, usar un ítem agregado para que MP cobre el total correcto
   const finalMpItems = discount > 0
-    ? [{ id: 'order', title: `CannaPunk — ${items.length} producto(s)`, quantity: 1, unit_price: total / 100, currency_id: 'ARS' }]
+    ? [{ id: 'order', title: `Cannapont — ${items.length} producto(s)`, quantity: 1, unit_price: total / 100, currency_id: 'ARS' }]
     : mpItems
 
   const baseUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
@@ -168,15 +168,19 @@ router.post('/webhook', async (req, res) => {
 
       if (pending.referrerId) {
         const video = await tx.video.findUnique({ where: { id: pending.referrerId } })
-        if (video) {
-          const commissionAmt = Math.round(pending.total * video.commissionPct / 100)
-          await tx.commission.create({
-            data: {
+        const commissionAmt = video ? Math.round(pending.total * video.commissionPct / 100) : 0
+
+        // Anti-fraude: skip si el comprador es el mismo creador, o si la comisión es $0
+        if (video && video.creatorId !== pending.buyerId && commissionAmt > 0) {
+          await tx.commission.upsert({
+            where:  { videoId_orderId: { videoId: pending.referrerId, orderId: newOrder.id } },
+            create: {
               creatorId: video.creatorId,
               videoId:   pending.referrerId,
               orderId:   newOrder.id,
               amount:    commissionAmt,
             },
+            update: {}, // idempotente — webhook doble no genera comisión duplicada
           })
           await notify(tx, {
             userId:    video.creatorId,

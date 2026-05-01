@@ -108,27 +108,29 @@ router.post('/', requireAuth, async (req, res) => {
       include: ORDER_INCLUDE,
     })
 
-    // Create commissions if there's a referrer video
+    // Create commission si hay referrer video
     if (referrerId) {
       const video = await tx.video.findUnique({ where: { id: referrerId } })
-      if (video) {
-        const commissionAmt = Math.round(total * video.commissionPct / 100)
-        await tx.commission.create({
-          data: {
+      const commissionAmt = video ? Math.round(total * video.commissionPct / 100) : 0
+
+      // Anti-fraude: skip si el comprador es el mismo creador, o si la comisión es $0
+      if (video && video.creatorId !== req.user.id && commissionAmt > 0) {
+        await tx.commission.upsert({
+          where:  { videoId_orderId: { videoId: referrerId, orderId: created.id } },
+          create: {
             creatorId: video.creatorId,
             videoId:   referrerId,
             orderId:   created.id,
             amount:    commissionAmt,
           },
+          update: {},
         })
-        // Notify creator
-        await tx.notification.create({
-          data: {
-            userId: video.creatorId,
-            type:   'commission',
-            title:  'Nueva comisión',
-            body:   `Ganaste $${commissionAmt.toLocaleString('es-AR')} por tu video`,
-          },
+        await notify(tx, {
+          userId:    video.creatorId,
+          type:      'commission',
+          title:     'Nueva comisión',
+          body:      `Ganaste $${commissionAmt.toLocaleString('es-AR')} por tu video`,
+          actionUrl: '/earnings',
         })
       }
     }

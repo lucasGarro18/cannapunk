@@ -1,6 +1,6 @@
 {
-  "name": "CannaPunk",
-  "short_name": "CannaPunk",
+  "name": "Cannapont",
+  "short_name": "Cannapont",
   "description": "El marketplace donde comprás, mostrás y ganás dinero",
   "start_url": "/",
   "display": "standalone",

@@ -37,6 +37,6 @@ export const useNotifStore = create(
         ],
       })),
     }),
-    { name: 'cannapunk-notifs' },
+    { name: 'cannapont-notifs' },
   ),
 )

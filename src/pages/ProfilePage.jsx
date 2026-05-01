@@ -26,6 +26,7 @@ import { videosApi } from '@/services/api'
 import { useQueryClient } from 'react-query'
 import NumberTicker from '@/components/ui/NumberTicker'
 import BorderBeam from '@/components/ui/BorderBeam'
+import SEO from '@/components/ui/SEO'
 
 // ─── Config ───────────────────────────────────────────────────
 
@@ -241,6 +242,13 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-2xl mx-auto pb-24 overflow-x-hidden">
+      <SEO
+        title={creator.name ?? creator.username}
+        description={creator.bio?.slice(0, 160) ?? `Perfil de @${creator.username} en Cannapont`}
+        image={creator.avatar ?? undefined}
+        url={`https://cannapont.vercel.app/profile/${creator.username}`}
+        type="profile"
+      />
 
       {/* ══ HERO ══════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden" style={{ minHeight: 300 }}>

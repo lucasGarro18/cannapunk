@@ -14,6 +14,6 @@ export const useVideosStore = create(
         videos: s.videos.filter(v => v.id !== id),
       })),
     }),
-    { name: 'cannapunk-videos' },
+    { name: 'cannapont-videos' },
   ),
 )

@@ -9,8 +9,12 @@ export default function Logo({ size = 'md', className }) {
         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
         filter: 'drop-shadow(0 0 12px rgba(245,158,11,0.5))',
-      }}>CANNA</span>
-      <span className="text-white">PUNK</span>
+      }}>ca</span>
+      <span style={{
+        color: '#22c55e',
+        filter: 'drop-shadow(0 0 10px rgba(34,197,94,0.6))',
+      }}>NN</span>
+      <span className="text-white">apont</span>
     </span>
   )
 }

@@ -25,7 +25,7 @@ export const useAuthStore = create(
       })),
     }),
     {
-      name:    'cannapunk-auth',
+      name:    'cannapont-auth',
       partialize: state => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
     },
   ),

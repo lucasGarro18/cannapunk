@@ -41,7 +41,16 @@
       "Bash(git *)",
       "Bash(gh *)",
       "PowerShell(winget install *)",
-      "PowerShell(gh auth *)"
+      "PowerShell(gh auth *)",
+      "Bash(railway login *)",
+      "Bash(curl -s http://localhost:4000/api/auth/me)",
+      "Bash(curl -s \"http://localhost:4000/api/videos?limit=5\")",
+      "Bash(curl -s \"http://localhost:4000/api/products/featured\")",
+      "Bash(curl -s -X POST http://localhost:4000/api/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"sofia@cannapunk.com\\\\\",\\\\\"password\\\\\":\\\\\"password123\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:4000/api/auth/login -H 'Content-Type: application/json' -d '{\\\\\"email\\\\\":\\\\\"sofia@cannapunk.com\\\\\",\\\\\"password\\\\\":\\\\\"password123\\\\\"}')",
+      "Bash(curl -s \"http://localhost:4000/api/auth/users?q=sofia\" -H \"Authorization: Bearer $\\(curl -s -X POST http://localhost:4000/api/auth/login -H 'Content-Type: application/json' -d '{\\\\\"email\\\\\":\\\\\"sofia@cannapunk.com\\\\\",\\\\\"password\\\\\":\\\\\"password123\\\\\"}')",
+      "Bash(curl -s -X POST \"http://localhost:4000/api/auth/login\" -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"sofia@cannapunk.com\\\\\",\\\\\"password\\\\\":\\\\\"password123\\\\\"}\" -o /tmp/login.json)",
+      "Read(//c/Users/LUCAS/AppData/Local/Temp/claude/C--Users-LUCAS-OneDrive-Desktop-cannapunk/c7fd2fde-9655-411d-aaf4-0e87865b7f30/tasks/**)"
     ]
   }
 }

@@ -6,9 +6,9 @@
    CSS VARIABLES
 ───────────────────────────────────────────────────────────── */
 :root {
-  --cp-neon:     #f59e0b;
-  --cp-neon-dim: #d97706;
-  --cp-light:    #fcd34d;
+  --cp-neon:     #22c55e;
+  --cp-neon-dim: #16a34a;
+  --cp-light:    #4ade80;
   --cp-violet:   #8b5cf6;
   --cp-dark:     #111113;
   --cp-surface:  #1c1c1f;
@@ -52,7 +52,7 @@ body::before {
 }
 
 ::selection {
-  background: rgba(245, 158, 11, 0.2);
+  background: rgba(34, 197, 94, 0.18);
   color: #fafafa;
 }
 
@@ -73,16 +73,16 @@ body::before {
 .btn:disabled { opacity: 0.35; pointer-events: none; }
 .btn:active   { transform: scale(0.97); }
 
-/* Ámbar dorado — acento primario */
+/* Verde neón — acento primario */
 .btn-primary {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
   padding: 0.625rem 1.375rem; font-weight: 600; border-radius: 0.875rem; border: none;
   cursor: pointer; user-select: none; text-decoration: none;
   position: relative; overflow: hidden;
   transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: #111113;
-  box-shadow: 0 4px 14px rgba(245,158,11,0.22), 0 1px 3px rgba(0,0,0,0.4);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #0c0c0e;
+  box-shadow: 0 4px 14px rgba(34,197,94,0.25), 0 1px 3px rgba(0,0,0,0.4);
 }
 .btn-primary::after {
   content: '';
@@ -92,7 +92,7 @@ body::before {
   transform: skewX(-20deg); transition: left 0s;
 }
 .btn-primary:hover {
-  box-shadow: 0 6px 20px rgba(245,158,11,0.3), 0 2px 6px rgba(0,0,0,0.4);
+  box-shadow: 0 6px 24px rgba(34,197,94,0.35), 0 2px 6px rgba(0,0,0,0.4);
   transform: translateY(-1px);
 }
 .btn-primary:hover::after { left: 120%; transition: left 0.45s ease-out; }
@@ -106,13 +106,13 @@ body::before {
   cursor: pointer; user-select: none; text-decoration: none;
   transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
   background: linear-gradient(var(--cp-surface), var(--cp-surface)) padding-box,
-              linear-gradient(135deg, rgba(245,158,11,0.4) 0%, rgba(139,92,246,0.2) 100%) border-box;
+              linear-gradient(135deg, rgba(34,197,94,0.4) 0%, rgba(139,92,246,0.2) 100%) border-box;
   border: 1px solid transparent;
   color: var(--cp-neon);
 }
 .btn-secondary:hover {
   background: linear-gradient(var(--cp-card), var(--cp-card)) padding-box,
-              linear-gradient(135deg, rgba(245,158,11,0.6) 0%, rgba(139,92,246,0.3) 100%) border-box;
+              linear-gradient(135deg, rgba(34,197,94,0.6) 0%, rgba(139,92,246,0.3) 100%) border-box;
   transform: translateY(-1px);
 }
 .btn-secondary:active  { transform: scale(0.97); }
@@ -167,9 +167,9 @@ body::before {
 }
 .card-hover:hover {
   background: linear-gradient(var(--cp-card), var(--cp-card)) padding-box,
-              linear-gradient(135deg, rgba(245,158,11,0.3) 0%, rgba(255,255,255,0.04) 50%, rgba(139,92,246,0.15) 100%) border-box;
+              linear-gradient(135deg, rgba(34,197,94,0.3) 0%, rgba(255,255,255,0.04) 50%, rgba(139,92,246,0.15) 100%) border-box;
   border: 1px solid transparent;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 4px 16px rgba(245,158,11,0.06), inset 0 1px 0 rgba(255,255,255,0.06);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 4px 16px rgba(34,197,94,0.08), inset 0 1px 0 rgba(255,255,255,0.06);
   transform: translateY(-3px);
 }
 
@@ -184,7 +184,7 @@ body::before {
 .card-gradient {
   border-radius: 1.25rem; overflow: hidden;
   background: linear-gradient(var(--cp-card), var(--cp-card)) padding-box,
-              linear-gradient(135deg, rgba(245,158,11,0.2) 0%, rgba(255,255,255,0.04) 50%, rgba(139,92,246,0.12) 100%) border-box;
+              linear-gradient(135deg, rgba(34,197,94,0.2) 0%, rgba(255,255,255,0.04) 50%, rgba(139,92,246,0.12) 100%) border-box;
   border: 1px solid transparent;
   box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
 }
@@ -207,14 +207,14 @@ body::before {
 .bento-featured {
   border-radius: 1.5rem; overflow: hidden;
   background: linear-gradient(var(--cp-card), var(--cp-card)) padding-box,
-              linear-gradient(135deg, rgba(245,158,11,0.22) 0%, rgba(255,255,255,0.04) 60%, rgba(139,92,246,0.12) 100%) border-box;
+              linear-gradient(135deg, rgba(34,197,94,0.22) 0%, rgba(255,255,255,0.04) 60%, rgba(139,92,246,0.12) 100%) border-box;
   border: 1px solid transparent;
   box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
   transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s ease;
 }
 .bento-featured:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(245,158,11,0.08);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(34,197,94,0.1);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -228,8 +228,8 @@ body::before {
 }
 .input::placeholder { color: #52525b; }
 .input:focus {
-  border-color: rgba(245,158,11,0.45);
-  box-shadow: 0 0 0 3px rgba(245,158,11,0.09);
+  border-color: rgba(34,197,94,0.45);
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.09);
 }
 
 .input-sm {
@@ -240,8 +240,8 @@ body::before {
 }
 .input-sm::placeholder { color: #52525b; }
 .input-sm:focus {
-  border-color: rgba(245,158,11,0.45);
-  box-shadow: 0 0 0 3px rgba(245,158,11,0.09);
+  border-color: rgba(34,197,94,0.45);
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.09);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -253,14 +253,14 @@ body::before {
   font-size: 0.75rem; line-height: 1rem; font-weight: 500;
 }
 
-/* Badge ámbar — acento primario */
+/* Badge verde neón — acento primario */
 .badge-neon {
   display: inline-flex; align-items: center; gap: 0.25rem;
   padding: 0.2rem 0.625rem; border-radius: 9999px;
   font-size: 0.75rem; line-height: 1rem; font-weight: 500;
-  color: #fcd34d;
-  background-color: rgba(245,158,11,0.1);
-  border: 1px solid rgba(245,158,11,0.22);
+  color: #4ade80;
+  background-color: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.25);
 }
 
 .badge-amber {
@@ -325,22 +325,23 @@ body::before {
 .text-neon { color: var(--cp-neon); }
 .neon-text { color: var(--cp-neon); }
 
-/* Gradient ámbar → dorado */
+/* Gradient verde → lima */
 .gradient-text {
-  background: linear-gradient(135deg, #f59e0b 0%, #fcd34d 50%, #f59e0b 100%);
+  background: linear-gradient(135deg, #22c55e 0%, #4ade80 50%, #22c55e 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Gradient ámbar → violeta (titular premium) */
+/* Gradient verde → violeta (titular premium) */
 .gradient-text-hero {
-  background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 40%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #4ade80 0%, #22c55e 40%, #8b5cf6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
+/* Gradient ámbar → dorado (mantenido para uso específico) */
 .gradient-text-amber {
   background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
   -webkit-background-clip: text;
@@ -379,7 +380,7 @@ body::before {
 ───────────────────────────────────────────────────────────── */
 .ring-neon {
   outline: none;
-  box-shadow: 0 0 0 2px var(--cp-dark), 0 0 0 4px rgba(245,158,11,0.4);
+  box-shadow: 0 0 0 2px var(--cp-dark), 0 0 0 4px rgba(34,197,94,0.4);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -391,14 +392,14 @@ body::before {
 .text-balance { text-wrap: balance; }
 .safe-bottom  { padding-bottom: env(safe-area-inset-bottom); }
 
-/* Línea decorativa ámbar → violeta */
+/* Línea decorativa verde → violeta */
 .gradient-line {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(245,158,11,0.35), rgba(139,92,246,0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(34,197,94,0.35), rgba(139,92,246,0.2), transparent);
 }
 
 .shadow-neon {
-  box-shadow: 0 4px 20px rgba(245,158,11,0.18), 0 1px 3px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 20px rgba(34,197,94,0.2), 0 1px 3px rgba(0,0,0,0.4);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -409,11 +410,11 @@ body::before {
 .animated-shiny-text {
   background: linear-gradient(
     110deg,
-    rgba(245,158,11,0.65) 0%,
-    rgba(245,158,11,0.65) 30%,
-    rgba(255,235,150,1) 50%,
-    rgba(245,158,11,0.65) 70%,
-    rgba(245,158,11,0.65) 100%
+    rgba(34,197,94,0.65) 0%,
+    rgba(34,197,94,0.65) 30%,
+    rgba(134,239,172,1) 50%,
+    rgba(34,197,94,0.65) 70%,
+    rgba(34,197,94,0.65) 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -439,7 +440,7 @@ body::before {
 }
 
 .border-beam-effect {
-  --beam-from: #f59e0b;
+  --beam-from: #22c55e;
   --beam-to:   #8b5cf6;
   --beam-duration: 8s;
   position: absolute;
@@ -482,8 +483,8 @@ body::before {
    BADGE COMMISSION PULSE — ProductCard
 ───────────────────────────────────────────────────────────── */
 @keyframes commission-pulse {
-  0%, 100% { box-shadow: 0 0 0 0   rgba(245,158,11,0.5); }
-  50%       { box-shadow: 0 0 0 4px rgba(245,158,11,0);   }
+  0%, 100% { box-shadow: 0 0 0 0   rgba(34,197,94,0.55); }
+  50%       { box-shadow: 0 0 0 4px rgba(34,197,94,0);   }
 }
 
 .badge-commission-pulse {

@@ -1,29 +1,11 @@
 const router = require('express').Router()
 const { z }  = require('zod')
-const path   = require('path')
-const fs     = require('fs')
 const prisma             = require('../db')
 const { requireAuth, optionalAuth } = require('../middleware/auth')
 const { serializeTags, fixVideos, fixVideo } = require('../sqlite')
+const { createUpload, genKey, uploadFile, deleteFile } = require('../storage')
 
-// Multer setup — carga diferida para que el server arranque aunque multer no esté instalado
-let upload = null
-function getUpload() {
-  if (upload) return upload
-  try {
-    const multer = require('multer')
-    const dest   = path.join(__dirname, '../../../uploads')
-    fs.mkdirSync(dest, { recursive: true })
-    const storage = multer.diskStorage({
-      destination: (_, __, cb) => cb(null, dest),
-      filename:    (_, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/\s/g, '_')}`),
-    })
-    upload = multer({ storage, limits: { fileSize: 200 * 1024 * 1024 } })
-  } catch {
-    upload = { single: () => (req, res, next) => next() } // fallback sin multer
-  }
-  return upload
-}
+const upload = createUpload({ maxMB: 200 })
 
 const VIDEO_INCLUDE = {
   creator: { select: { id: true, name: true, username: true, avatar: true, roles: true } },
@@ -86,13 +68,13 @@ router.get('/product/:productId', async (req, res) => {
 })
 
 // POST /api/videos/upload — multipart con archivo real
-router.post('/upload', requireAuth, (req, res, next) => {
-  getUpload().single('video')(req, res, next)
-}, async (req, res) => {
+router.post('/upload', requireAuth, upload.single('video'), async (req, res) => {
   const tags = req.body.tags ? req.body.tags.split(',').map(t => t.trim()).filter(Boolean) : []
-  const videoUrl = req.file
-    ? `${process.env.BASE_URL ?? 'http://localhost:4000'}/uploads/${req.file.filename}`
-    : req.body.videoUrl ?? null
+  let videoUrl = req.body.videoUrl ?? null
+  if (req.file) {
+    const key = genKey('videos', req.file.originalname)
+    videoUrl  = await uploadFile(req.file.buffer, key, req.file.mimetype)
+  }
 
   let commissionPct = 0
   if (req.body.productId) {
@@ -171,6 +153,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   if (!video) return res.status(404).json({ error: 'Video no encontrado' })
   if (video.creatorId !== req.user.id) return res.status(403).json({ error: 'Sin permiso' })
   await prisma.video.delete({ where: { id: req.params.id } })
+  deleteFile(video.videoUrl) // cleanup async — no bloquea la respuesta
   res.status(204).send()
 })
 

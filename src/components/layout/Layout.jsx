@@ -24,7 +24,7 @@ function PWABanner() {
         <Logo size="sm" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold">Instalar CannaPunk</p>
+        <p className="text-sm font-semibold">Instalar Cannapont</p>
         <p className="text-xs text-gray-500 mt-0.5">Accedé más rápido desde tu pantalla de inicio</p>
       </div>
       <div className="flex items-center gap-1.5 flex-shrink-0">

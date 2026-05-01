@@ -39,11 +39,11 @@ const stats = [
 const QUICK_LINKS = [
   { to: '/feed',      icon: RiVideoLine,            label: 'Feed',       accent: '#a78bfa' },
   { to: '/market',    icon: RiShoppingBag3Line,     label: 'Tienda',     accent: '#60a5fa' },
-  { to: '/upload',    icon: RiUploadCloudLine,      label: 'Subir',      accent: '#f59e0b' },
-  { to: '/wallet',    icon: RiWallet3Line,          label: 'Wallet',     accent: '#f59e0b' },
+  { to: '/upload',    icon: RiUploadCloudLine,      label: 'Subir',      accent: '#22c55e' },
+  { to: '/wallet',    icon: RiWallet3Line,          label: 'Wallet',     accent: '#22c55e' },
   { to: '/creators',  icon: RiUserStarLine,         label: 'Creadores',  accent: '#c084fc' },
   { to: '/referrals', icon: RiShareForwardLine,     label: 'Referidos',  accent: '#34d399' },
-  { to: '/earnings',  icon: RiMoneyDollarCircleLine, label: 'Ganancias', accent: '#f59e0b' },
+  { to: '/earnings',  icon: RiMoneyDollarCircleLine, label: 'Ganancias', accent: '#22c55e' },
   { to: '/orders',    icon: RiTruckLine,            label: 'Pedidos',    accent: '#f87171' },
 ]
 
@@ -64,7 +64,7 @@ function CreatorCard({ creator, rank }) {
         <Avatar src={creator.avatar} name={creator.name} size="xl" />
         <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center
                          text-[11px] font-bold"
-              style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#0c0c0e' }}>
+              style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: '#0c0c0e' }}>
           {rank}
         </span>
       </div>
@@ -116,17 +116,17 @@ function AuthHome({ user, featuredProducts, loadingProducts, latestVideos, loadi
               style={{ minHeight: '120px' }}>
           {/* Orb de fondo */}
           <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full pointer-events-none"
-               style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%)' }} />
+               style={{ background: 'radial-gradient(circle, rgba(34,197,94,0.1) 0%, transparent 70%)' }} />
           <div className="relative">
             <p className="label mb-2">Saldo disponible</p>
             <p className="text-3xl font-bold gradient-text leading-none">{formatCurrency(balance)}</p>
             {pending > 0 && (
               <p className="text-xs mt-1.5" style={{ color: '#52525b' }}>
-                +{formatCurrency(pending)} <span style={{ color: '#f59e0b' }}>pendiente</span>
+                +{formatCurrency(pending)} <span style={{ color: '#22c55e' }}>pendiente</span>
               </p>
             )}
             <div className="mt-3 flex items-center gap-1.5 text-xs font-medium"
-                 style={{ color: '#f59e0b' }}>
+                 style={{ color: '#22c55e' }}>
               Ver wallet <RiArrowRightLine size={13} />
             </div>
           </div>
@@ -136,13 +136,13 @@ function AuthHome({ user, featuredProducts, loadingProducts, latestVideos, loadi
         <div className="col-span-2 sm:col-span-1 grid grid-cols-2 sm:grid-cols-1 gap-3">
           <div className="bento p-4">
             <p className="label mb-1">Comisiones</p>
-            <p className="text-xl font-bold" style={{ color: '#f59e0b' }}>
+            <p className="text-xl font-bold" style={{ color: '#22c55e' }}>
               {formatCurrency(wallet?.totalEarned ?? 0)}
             </p>
           </div>
           <div className="bento p-4">
             <p className="label mb-1">Este mes</p>
-            <p className="text-xl font-bold" style={{ color: '#f59e0b' }}>
+            <p className="text-xl font-bold" style={{ color: '#22c55e' }}>
               {formatCurrency(wallet?.monthEarned ?? 0)}
             </p>
           </div>
@@ -234,6 +234,9 @@ export default function HomePage() {
       <section className="relative pt-20 pb-28 px-4">
         {/* Mesh gradient background */}
         <div className="absolute inset-0 bg-gradient-mesh pointer-events-none" />
+        {/* Aurora orb — neón verde */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[600px] h-[400px] rounded-full pointer-events-none"
+             style={{ background: 'radial-gradient(ellipse, rgba(34,197,94,0.12) 0%, rgba(34,197,94,0.04) 45%, transparent 72%)', filter: 'blur(40px)' }} />
         {/* Meteors */}
         <Meteors count={14} />
         {/* Línea divisoria inferior */}
@@ -247,14 +250,14 @@ export default function HomePage() {
 
             <div className="inline-flex items-center gap-2 badge-neon mb-6">
               <RiSparklingLine size={12} />
-              Marketplace socio-comercial · Argentina
+              El marketplace donde tu experiencia vale dinero
             </div>
 
             <h1 className="text-5xl md:text-7xl font-punk font-bold leading-[1.05] tracking-tight text-balance">
-              Comprá, mostrá<br />
-              y <FlipWords
+              Comprá, mostrá y ganá<br />
+              <FlipWords
                 className="gradient-text"
-                words={['ganá dinero', 'hacé reviews', 'monetizá todo', 'crecé sin límites']}
+                words={['comisiones reales', 'en automático', 'mientras dormís', 'sin límites']}
                 interval={2600}
               />
             </h1>
@@ -262,8 +265,8 @@ export default function HomePage() {
             <p className="mt-6 text-base md:text-lg leading-relaxed max-w-lg mx-auto"
                style={{ color: '#71717a' }}>
               El único marketplace donde tus videos de compra generan{' '}
-              <AnimatedShinyText>comisiones automáticas</AnimatedShinyText>.
-              TikTok meets Mercado Libre.
+              <AnimatedShinyText>comisiones automáticas</AnimatedShinyText>.{' '}
+              Comprás, filmás y cobrás. El feed que labura por vos.
             </p>
           </motion.div>
 
@@ -319,8 +322,8 @@ export default function HomePage() {
               <motion.div key={i} variants={item} className="bento-featured p-7 space-y-5">
                 <div className="flex items-center justify-between">
                   <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                       style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
-                    <Icon size={22} style={{ color: '#f59e0b' }} />
+                       style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.18)' }}>
+                    <Icon size={22} style={{ color: '#22c55e' }} />
                   </div>
                   <span className="font-punk text-6xl font-bold"
                         style={{ color: 'rgba(255,255,255,0.04)', lineHeight: 1 }}>
@@ -409,7 +412,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}>
             <h2 className="text-4xl font-punk font-bold">
-              Por qué <span className="gradient-text">CannaPunk</span>
+              Por qué <span className="gradient-text">Cannapont</span>
             </h2>
           </motion.div>
 
@@ -421,11 +424,11 @@ export default function HomePage() {
             {/* Feature grande — 2 cols */}
             <motion.div variants={item} className="col-span-2 bento-featured p-8 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none"
-                   style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+                   style={{ background: 'radial-gradient(circle, rgba(34,197,94,0.07) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
               <div className="relative">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
-                     style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
-                  <RiFlashlightLine size={28} style={{ color: '#f59e0b' }} />
+                     style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.18)' }}>
+                  <RiFlashlightLine size={28} style={{ color: '#22c55e' }} />
                 </div>
                 <h3 className="text-2xl font-bold mb-3">Comisiones al instante</h3>
                 <p className="text-base leading-relaxed max-w-md" style={{ color: '#71717a' }}>
@@ -449,12 +452,12 @@ export default function HomePage() {
 
             {/* Feature chico amber */}
             <motion.div variants={item} className="bento p-7 relative overflow-hidden">
-              <BorderBeam duration={7} colorFrom="#f59e0b" colorTo="#fcd34d" />
+              <BorderBeam duration={7} colorFrom="#22c55e" colorTo="#4ade80" />
               <div className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full"
-                   style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%)' }} />
+                   style={{ background: 'radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 70%)' }} />
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
-                   style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
-                <RiMoneyDollarCircleLine size={22} style={{ color: '#f59e0b' }} />
+                   style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.18)' }}>
+                <RiMoneyDollarCircleLine size={22} style={{ color: '#22c55e' }} />
               </div>
               <h3 className="font-semibold mb-2">Sin límite de ingresos</h3>
               <p className="text-sm leading-relaxed" style={{ color: '#71717a' }}>Un video puede generar comisiones para siempre.</p>

@@ -11,21 +11,8 @@ const { serializeRoles, fixUser } = require('../sqlite')
 const { sendWelcome } = require('../mailer')
 const { notify } = require('../notify')
 
-let avatarUpload = null
-function getAvatarUpload() {
-  if (avatarUpload) return avatarUpload
-  const multer  = require('multer')
-  const dest    = path.join(__dirname, '../../../uploads/avatars')
-  fs.mkdirSync(dest, { recursive: true })
-  const storage = multer.diskStorage({
-    destination: (_, __, cb) => cb(null, dest),
-    filename:    (_, file, cb) => cb(null, `avatar_${Date.now()}${path.extname(file.originalname)}`),
-  })
-  avatarUpload = multer({ storage, limits: { fileSize: 2 * 1024 * 1024 }, fileFilter: (_, f, cb) => {
-    cb(null, f.mimetype.startsWith('image/'))
-  }})
-  return avatarUpload
-}
+const { createUpload, genKey, uploadFile } = require('../storage')
+const avatarUpload = createUpload({ maxMB: 2, filter: (_, f, cb) => cb(null, f.mimetype.startsWith('image/')) })
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 15, message: 'Demasiados intentos. Esperá 15 minutos.' })
 
@@ -152,18 +139,16 @@ router.patch('/me', requireAuth, async (req, res) => {
 })
 
 // POST /api/auth/me/avatar — subida de imagen de perfil
-router.post('/me/avatar', requireAuth,
-  (req, res, next) => getAvatarUpload().single('avatar')(req, res, next),
-  async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No se recibió imagen' })
-    const url = `${process.env.BASE_URL ?? 'http://localhost:4000'}/uploads/avatars/${req.file.filename}`
-    const updated = await prisma.user.update({
-      where: { id: req.user.id },
-      data:  { avatar: url },
-    })
-    res.json(sanitizeUser(updated))
-  },
-)
+router.post('/me/avatar', requireAuth, avatarUpload.single('avatar'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No se recibió imagen' })
+  const key = genKey('avatars', req.file.originalname)
+  const url = await uploadFile(req.file.buffer, key, req.file.mimetype)
+  const updated = await prisma.user.update({
+    where: { id: req.user.id },
+    data:  { avatar: url },
+  })
+  res.json(sanitizeUser(updated))
+})
 
 // POST /api/auth/reset-request
 router.post('/reset-request', authLimiter, async (req, res) => {
@@ -198,9 +183,9 @@ router.post('/reset-request', authLimiter, async (req, res) => {
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
     })
     await transporter.sendMail({
-      from:    process.env.SMTP_FROM ?? 'noreply@cannapunk.com',
+      from:    process.env.SMTP_FROM ?? 'noreply@cannapont.com',
       to:      email,
-      subject: 'Resetear contraseña — CannaPunk',
+      subject: 'Resetear contraseña — Cannapont',
       html:    `<p>Hacé click para resetear tu contraseña (válido 1 hora):</p><a href="${resetUrl}">${resetUrl}</a>`,
     })
   } catch (e) {

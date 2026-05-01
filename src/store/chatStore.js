@@ -27,7 +27,7 @@ export const useChatStore = create(
       setOnlineUsers: (userIds) => set({ onlineUsers: userIds }),
     }),
     {
-      name: 'cannapunk-chat',
+      name: 'cannapont-chat',
       partialize: state => ({ drafts: state.drafts }),
     },
   ),

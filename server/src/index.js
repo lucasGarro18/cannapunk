@@ -22,6 +22,7 @@ const referralRoutes  = require('./routes/referrals')
 const adminRoutes     = require('./routes/admin')
 const reviewRoutes    = require('./routes/reviews')
 const couponRoutes    = require('./routes/coupons')
+const ogRoutes        = require('./routes/og')
 
 const app    = express()
 const server = http.createServer(app)
@@ -48,6 +49,7 @@ app.use('/api/referrals',    referralRoutes)
 app.use('/api/admin',        adminRoutes)
 app.use('/api/reviews',      reviewRoutes)
 app.use('/api/coupons',      couponRoutes)
+app.use('/api/og',          ogRoutes)
 
 app.get('/api/health', (_, res) => res.json({ ok: true }))
 
@@ -154,5 +156,5 @@ io.on('connection', (socket) => {
 module.exports.io = io
 
 server.listen(PORT, () => {
-  console.log(`🚀 CannaPunk API corriendo en http://localhost:${PORT}`)
+  console.log(`🚀 Cannapont API corriendo en http://localhost:${PORT}`)
 })

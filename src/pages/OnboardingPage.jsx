@@ -68,7 +68,7 @@ export default function OnboardingPage() {
       { roles: selected, onboardingDone: true },
       {
         onSuccess: () => {
-          if (user?.email) localStorage.setItem(`cannapunk-ob-${user.email}`, '1')
+          if (user?.email) localStorage.setItem(`cannapont-ob-${user.email}`, '1')
           navigate('/')
         },
       },
@@ -89,7 +89,7 @@ export default function OnboardingPage() {
           Hola, <span className="neon-text">{user?.name?.split(' ')[0]}</span> 👋
             </h1>
             <p className="text-sm text-gray-500 mt-2">
-              ¿Qué querés hacer en CannaPunk? Podés elegir varios roles.
+              ¿Qué querés hacer en Cannapont? Podés elegir varios roles.
             </p>
           </div>
         </motion.div>

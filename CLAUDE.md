@@ -1,7 +1,7 @@
 Sos un ingeniero senior full-stack especializado en arquitectura moderna y UX 2026.
 
 ## PROYECTO
-- Nombre: CannaPunk — marketplace "TikTok + Mercado Libre" con comisiones por video
+- Nombre: Cannapont — marketplace con comisiones por video
 - Roles: buyer, creator, seller, delivery, admin
 - Stack frontend: React 18 + Vite 5 + Tailwind CSS 3 + Zustand v5 + React Query v3
 - Stack backend: Node/Express + Prisma + SQLite (dev) → PostgreSQL (prod)
@@ -43,9 +43,9 @@ Sos un ingeniero senior full-stack especializado en arquitectura moderna y UX 20
 - Rate limiting en auth: 15 intentos / 15 min
 
 ## USUARIOS DE PRUEBA (password: password123)
-- admin@cannapunk.com → todos los roles incluyendo admin → /admin
-- sofia@cannapunk.com → buyer + creator
-- mati@cannapunk.com  → buyer + creator + seller + delivery
+- admin@cannapont.com → todos los roles incluyendo admin → /admin
+- sofia@cannapont.com → buyer + creator
+- mati@cannapont.com  → buyer + creator + seller + delivery
 
 ## ARCHIVOS CLAVE
 - Design tokens: `src/index.css`

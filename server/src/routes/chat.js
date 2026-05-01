@@ -1,36 +1,17 @@
 const router          = require('express').Router()
 const { z }           = require('zod')
-const path            = require('path')
-const fs              = require('fs')
 const prisma          = require('../db')
 const { requireAuth } = require('../middleware/auth')
 const ioModule        = require('../io')
+const { createUpload, genKey, uploadFile } = require('../storage')
 
-// Multer setup para adjuntos de chat
-let chatUpload = null
-function getUpload() {
-  if (chatUpload) return chatUpload
-  try {
-    const multer = require('multer')
-    const dest   = path.join(__dirname, '../../../uploads/chat')
-    fs.mkdirSync(dest, { recursive: true })
-    const storage = multer.diskStorage({
-      destination: (_, __, cb) => cb(null, dest),
-      filename:    (_, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`),
-    })
-    chatUpload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }) // 10 MB
-  } catch {
-    chatUpload = { single: () => (req, res, next) => next() }
-  }
-  return chatUpload
-}
+const chatUpload = createUpload({ maxMB: 10 })
 
 // POST /api/chat/upload — sube adjunto y devuelve URL pública
-router.post('/upload', requireAuth, (req, res, next) => {
-  getUpload().single('file')(req, res, next)
-}, (req, res) => {
+router.post('/upload', requireAuth, chatUpload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Sin archivo' })
-  const url = `${process.env.BASE_URL ?? 'http://localhost:4000'}/uploads/chat/${req.file.filename}`
+  const key = genKey('chat', req.file.originalname)
+  const url = await uploadFile(req.file.buffer, key, req.file.mimetype)
   res.json({ url, name: req.file.originalname, mime: req.file.mimetype, size: req.file.size })
 })
 

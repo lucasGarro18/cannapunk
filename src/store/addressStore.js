@@ -36,6 +36,6 @@ export const useAddressStore = create(
         return addresses.find(a => a.id === defaultId) ?? addresses[0] ?? null
       },
     }),
-    { name: 'cannapunk-addresses' },
+    { name: 'cannapont-addresses' },
   ),
 )

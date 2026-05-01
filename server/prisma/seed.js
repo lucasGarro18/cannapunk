@@ -12,21 +12,21 @@ async function main() {
   // Users
   const [admin, sofia, mati] = await Promise.all([
     prisma.user.upsert({
-      where:  { email: 'admin@cannapunk.com' },
+      where:  { email: 'admin@cannapont.com' },
       update: {},
       create: {
-        name: 'Admin CannaPunk', email: 'admin@cannapunk.com',
+        name: 'Admin Cannapont', email: 'admin@cannapont.com',
         username: 'admin', passwordHash: hash,
         roles: serializeRoles(['buyer', 'creator', 'seller', 'admin']),
         onboardingDone: true,
-        bio: 'El equipo de CannaPunk',
+        bio: 'El equipo de Cannapont',
       },
     }),
     prisma.user.upsert({
-      where:  { email: 'sofia@cannapunk.com' },
+      where:  { email: 'sofia@cannapont.com' },
       update: {},
       create: {
-        name: 'Sofía Punk', email: 'sofia@cannapunk.com',
+        name: 'Sofía', email: 'sofia@cannapont.com',
         username: 'sofiapunk', passwordHash: hash,
         roles: serializeRoles(['buyer', 'creator']),
         onboardingDone: true,
@@ -35,10 +35,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where:  { email: 'mati@cannapunk.com' },
+      where:  { email: 'mati@cannapont.com' },
       update: {},
       create: {
-        name: 'Matias Verde', email: 'mati@cannapunk.com',
+        name: 'Matias Verde', email: 'mati@cannapont.com',
         username: 'mativerde', passwordHash: hash,
         roles: serializeRoles(['buyer', 'creator', 'seller', 'delivery']),
         onboardingDone: true,
@@ -225,9 +225,9 @@ async function main() {
 
   console.log('✅ Seed completado')
   console.log('   Usuarios de prueba:')
-  console.log('   📧 admin@cannapunk.com / password123')
-  console.log('   📧 sofia@cannapunk.com / password123')
-  console.log('   📧 mati@cannapunk.com  / password123')
+  console.log('   📧 admin@cannapont.com / password123')
+  console.log('   📧 sofia@cannapont.com / password123')
+  console.log('   📧 mati@cannapont.com  / password123')
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect())
