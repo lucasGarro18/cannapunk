@@ -254,7 +254,10 @@ router.get('/users', requireAuth, async (req, res) => {
     where: {
       AND: [
         { NOT: { id: req.user.id } },
-        { OR: [{ name: { contains: q } }, { username: { contains: q } }] },
+        { OR: [
+          { name:     { contains: q, mode: 'insensitive' } },
+          { username: { contains: q, mode: 'insensitive' } },
+        ]},
       ],
     },
     select: { id: true, name: true, username: true, avatar: true },

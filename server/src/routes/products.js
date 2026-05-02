@@ -47,8 +47,8 @@ router.get('/', optionalAuth, async (req, res) => {
     ...(discount && { originalPrice: { not: null } }),
     ...(q && {
       OR: [
-        { name:        { contains: q } },
-        { description: { contains: q } },
+        { name:        { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
       ],
     }),
   }

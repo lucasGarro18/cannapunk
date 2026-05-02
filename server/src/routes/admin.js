@@ -41,7 +41,11 @@ router.get('/users', ...guard, async (req, res) => {
   const skip = (Number(page) - 1) * take
 
   const where = {}
-  if (q)    where.OR = [{ name: { contains: q } }, { username: { contains: q } }, { email: { contains: q } }]
+  if (q)    where.OR = [
+    { name:     { contains: q, mode: 'insensitive' } },
+    { username: { contains: q, mode: 'insensitive' } },
+    { email:    { contains: q, mode: 'insensitive' } },
+  ]
   if (role) where.roles = { contains: role }
 
   const [users, total] = await Promise.all([
