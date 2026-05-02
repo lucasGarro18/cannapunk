@@ -34,10 +34,11 @@ model User {
   reviews        Review[]
   following      Follow[]         @relation("follower")
   followers      Follow[]         @relation("following")
-  notifications  Notification[]
-  deliveries     Order[]          @relation("delivery")
-  conversations  ConversationParticipant[]
-  sentMessages   Message[]        @relation("sentMessages")
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
+  deliveries        Order[]          @relation("delivery")
+  conversations     ConversationParticipant[]
+  sentMessages      Message[]        @relation("sentMessages")
 }
 
 model Product {
@@ -237,4 +238,15 @@ model Review {
   orderId   String
 
   @@unique([userId, productId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 }

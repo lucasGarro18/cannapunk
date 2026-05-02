@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { Routes, Route } from 'react-router-dom'
 import Layout         from '@/components/layout/Layout'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
@@ -46,6 +47,7 @@ function PageLoader() {
 }
 
 export default function App() {
+  usePushNotifications()
   return (
     <ErrorBoundary>
     <Suspense fallback={<PageLoader />}>

@@ -154,6 +154,13 @@ export const couponsApi = {
   delete:   (id)               => http.delete(`/coupons/${id}`),
 }
 
+// ----- Push notifications -----
+export const pushApi = {
+  getVapidKey:   ()       => http.get('/push/vapid-public-key'),
+  subscribe:     (data)   => http.post('/push/subscribe', data),
+  unsubscribe:   (endpoint) => http.delete('/push/subscribe', { data: { endpoint } }),
+}
+
 // ----- Admin -----
 export const adminApi = {
   getStats:       ()                        => http.get('/admin/stats'),

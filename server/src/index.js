@@ -23,6 +23,7 @@ const adminRoutes     = require('./routes/admin')
 const reviewRoutes    = require('./routes/reviews')
 const couponRoutes    = require('./routes/coupons')
 const ogRoutes        = require('./routes/og')
+const pushRoutes      = require('./routes/push')
 
 const app    = express()
 const server = http.createServer(app)
@@ -50,6 +51,7 @@ app.use('/api/admin',        adminRoutes)
 app.use('/api/reviews',      reviewRoutes)
 app.use('/api/coupons',      couponRoutes)
 app.use('/api/og',          ogRoutes)
+app.use('/api/push',        pushRoutes)
 
 app.get('/api/health', (_, res) => res.json({ ok: true }))
 
