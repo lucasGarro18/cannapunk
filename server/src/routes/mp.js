@@ -3,9 +3,10 @@ const { z }   = require('zod')
 const { MercadoPagoConfig, Preference, Payment } = require('mercadopago')
 const prisma          = require('../db')
 const { requireAuth } = require('../middleware/auth')
-const { serializeAddress } = require('../sqlite')
-const { notify }      = require('../notify')
+const { serializeAddress }      = require('../sqlite')
+const { notify }                = require('../notify')
 const { sendOrderConfirmation } = require('../mailer')
+const { creatorCommission }     = require('../commission')
 
 const mp = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
@@ -148,11 +149,17 @@ router.post('/webhook', async (req, res) => {
     })
 
     const order = await prisma.$transaction(async (tx) => {
+      // Decremento atómico — misma técnica que orders.js para evitar overselling
       for (const { productId, qty } of orderItems) {
-        await tx.product.update({
-          where: { id: productId },
-          data:  { stock: { decrement: qty }, salesCount: { increment: qty } },
-        })
+        const p = products.find(p => p.id === productId)
+        const affected = await tx.$executeRaw`
+          UPDATE "Product"
+          SET stock = stock - ${qty}, "salesCount" = "salesCount" + ${qty}
+          WHERE id = ${productId} AND stock >= ${qty}
+        `
+        if (affected === 0) {
+          throw Object.assign(new Error(`Stock insuficiente: "${p?.name ?? productId}"`), { status: 400 })
+        }
       }
 
       const newOrder = await tx.order.create({
@@ -168,7 +175,7 @@ router.post('/webhook', async (req, res) => {
 
       if (pending.referrerId) {
         const video = await tx.video.findUnique({ where: { id: pending.referrerId } })
-        const commissionAmt = video ? Math.round(pending.total * video.commissionPct / 100) : 0
+        const commissionAmt = video ? creatorCommission(pending.total, video.commissionPct) : 0
 
         // Anti-fraude: skip si el comprador es el mismo creador, o si la comisión es $0
         if (video && video.creatorId !== pending.buyerId && commissionAmt > 0) {

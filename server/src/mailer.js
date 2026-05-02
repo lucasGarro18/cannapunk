@@ -144,4 +144,33 @@ async function sendWelcome({ to, name }) {
   })
 }
 
-module.exports = { sendOrderConfirmation, sendCommissionPaid, sendWelcome }
+// ── Email: retiro completado ───────────────────────────────────
+async function sendWithdrawalCompleted({ to, name, amount, method }) {
+  const t = getTransporter()
+  if (!t) return
+
+  const methodLabel = method === 'cbu' ? 'CBU / CVU' : method === 'mercado' ? 'Mercado Pago' : 'USDT (Polygon)'
+
+  const html = layout(`
+    <h1 style="font-size:20px;font-weight:700;margin:0 0 8px">Retiro procesado ✅</h1>
+    <p style="color:#a1a1aa;margin:0 0 24px">Hola ${name}, tu retiro fue acreditado.</p>
+
+    <div style="background:#1c1c1f;border:1px solid #27272a;border-radius:16px;padding:24px;text-align:center;margin-bottom:20px">
+      <p style="margin:0 0 4px;color:#a1a1aa;font-size:13px">Monto enviado</p>
+      <p style="margin:0 0 8px;font-size:32px;font-weight:700;color:#00e676">${ARS(amount)}</p>
+      <p style="margin:0;font-size:12px;color:#52525b">vía ${methodLabel}</p>
+    </div>
+
+    <p style="font-size:13px;color:#71717a">El dinero puede demorar 1–3 días hábiles en verse reflejado según tu banco.</p>
+    ${btnPrimary(`${process.env.CLIENT_URL ?? 'http://localhost:5173'}/wallet`, 'Ver historial')}
+  `)
+
+  await t.sendMail({
+    from:    FROM(),
+    to,
+    subject: `Retiro de ${ARS(amount)} acreditado`,
+    html,
+  })
+}
+
+module.exports = { sendOrderConfirmation, sendCommissionPaid, sendWithdrawalCompleted, sendWelcome }

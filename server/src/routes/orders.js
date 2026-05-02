@@ -3,7 +3,8 @@ const { z }  = require('zod')
 const prisma          = require('../db')
 const { requireAuth } = require('../middleware/auth')
 const { serializeAddress, fixOrders, fixOrder } = require('../sqlite')
-const { notify }      = require('../notify')
+const { notify }            = require('../notify')
+const { creatorCommission } = require('../commission')
 
 const ORDER_INCLUDE = {
   items: {
@@ -116,7 +117,7 @@ router.post('/', requireAuth, async (req, res) => {
     // Create commission si hay referrer video
     if (referrerId) {
       const video = await tx.video.findUnique({ where: { id: referrerId } })
-      const commissionAmt = video ? Math.round(total * video.commissionPct / 100) : 0
+      const commissionAmt = video ? creatorCommission(total, video.commissionPct) : 0
 
       // Anti-fraude: skip si el comprador es el mismo creador, o si la comisión es $0
       if (video && video.creatorId !== req.user.id && commissionAmt > 0) {

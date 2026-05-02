@@ -3,6 +3,7 @@ const prisma          = require('../db')
 const { requireAuth } = require('../middleware/auth')
 const { fixUser }     = require('../sqlite')
 const { notify }      = require('../notify')
+const { sendCommissionPaid, sendWithdrawalCompleted } = require('../mailer')
 
 const ARS = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
 
@@ -107,8 +108,9 @@ router.patch('/commissions/:id/pay', ...guard, async (req, res) => {
   if (existing.status === 'paid') return res.status(400).json({ error: 'Ya estaba pagada' })
 
   const commission = await prisma.commission.update({
-    where: { id: req.params.id },
-    data:  { status: 'paid', paidAt: new Date(), paidBy: req.user.id },
+    where:   { id: req.params.id },
+    data:    { status: 'paid', paidAt: new Date(), paidBy: req.user.id },
+    include: { creator: { select: { name: true, email: true } } },
   })
   await notify(prisma, {
     userId:    commission.creatorId,
@@ -117,6 +119,11 @@ router.patch('/commissions/:id/pay', ...guard, async (req, res) => {
     body:      `Tu comisión de ${ARS(commission.amount)} fue acreditada a tu balance`,
     actionUrl: '/wallet',
   })
+  sendCommissionPaid({
+    to:     commission.creator.email,
+    name:   commission.creator.name,
+    amount: commission.amount,
+  }).catch(err => console.error('[Mailer commissionPaid]', err.message))
   res.json(commission)
 })
 
@@ -139,6 +146,11 @@ router.patch('/commissions/pay-all', ...guard, async (req, res) => {
     data:  { status: 'paid', paidAt: now, paidBy: req.user.id },
   })
 
+  const creator = await prisma.user.findUnique({
+    where:  { id: creatorId },
+    select: { name: true, email: true },
+  })
+
   await notify(prisma, {
     userId:    creatorId,
     type:      'commission',
@@ -146,6 +158,15 @@ router.patch('/commissions/pay-all', ...guard, async (req, res) => {
     body:      `${pending.length} comisiones acreditadas por un total de ${ARS(totalAmount)}`,
     actionUrl: '/wallet',
   })
+
+  if (creator) {
+    sendCommissionPaid({
+      to:     creator.email,
+      name:   creator.name,
+      amount: totalAmount,
+    }).catch(err => console.error('[Mailer commissionPaid]', err.message))
+  }
+
   res.json({ paid: pending.length, totalAmount })
 })
 
@@ -239,18 +260,25 @@ router.patch('/withdrawals/:id/pay', ...guard, async (req, res) => {
   if (withdrawal.status === 'completed') return res.status(400).json({ error: 'Ya está pagado' })
 
   const updated = await prisma.withdrawal.update({
-    where: { id },
-    data:  { status: 'completed' },
+    where:   { id },
+    data:    { status: 'completed' },
+    include: { user: { select: { name: true, email: true } } },
   })
 
-  const { notify } = require('../notify')
   await notify(prisma, {
     userId:    withdrawal.userId,
     type:      'withdrawal',
     title:     'Retiro acreditado',
-    body:      `Tu retiro fue procesado. El dinero ya está en camino.`,
+    body:      `${ARS(withdrawal.amount)} en camino a tu cuenta`,
     actionUrl: '/wallet',
   })
+
+  sendWithdrawalCompleted({
+    to:     updated.user.email,
+    name:   updated.user.name,
+    amount: withdrawal.amount,
+    method: withdrawal.method,
+  }).catch(err => console.error('[Mailer withdrawal]', err.message))
 
   res.json(updated)
 })
