@@ -51,7 +51,7 @@ export default function Logo({ size = 'md', className, withParticles = false }) 
 
   return (
     <span
-      className={clsx('font-punk font-bold tracking-widest flex items-center gap-1.5 select-none', TEXT_SIZES[size], className)}
+      className={clsx('font-punk font-bold tracking-widest flex items-center gap-1.5 select-none whitespace-nowrap overflow-visible', TEXT_SIZES[size], className)}
       onMouseEnter={spawnParticles}
       style={{ position: 'relative' }}
     >

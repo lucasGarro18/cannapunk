@@ -295,14 +295,16 @@ export default function HomePage() {
               El marketplace donde tu experiencia vale dinero
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-punk font-bold leading-[1.05] tracking-tight text-balance">
-              Comprá, mostrá y ganá<br />
+            <h1 className="text-5xl md:text-7xl font-punk font-bold leading-[1.1] tracking-tight">
+              Comprá, mostrá y ganá
+            </h1>
+            <div className="text-4xl md:text-6xl font-punk font-bold gradient-text mt-1"
+                 style={{ minHeight: '1.25em', lineHeight: 1.15 }}>
               <FlipWords
-                className="gradient-text"
                 words={['comisiones reales', 'en automático', 'mientras dormís', 'sin límites']}
                 interval={2600}
               />
-            </h1>
+            </div>
 
             <p className="mt-6 text-base md:text-lg leading-relaxed max-w-lg mx-auto"
                style={{ color: '#71717a' }}>

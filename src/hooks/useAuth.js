@@ -46,7 +46,13 @@ export function useLogin() {
     ),
     {
       onSuccess: ({ user, token }) => {
-        const savedOb = localStorage.getItem(`cannapont-ob-${user.email}`) === '1'
+        // Migración: acepta tanto la key nueva como la legacy (antes del rename)
+        const savedOb =
+          localStorage.getItem(`cannapont-ob-${user.email}`) === '1' ||
+          localStorage.getItem(`cannapunk-ob-${user.email}`) === '1'
+        if (localStorage.getItem(`cannapunk-ob-${user.email}`) === '1') {
+          localStorage.setItem(`cannapont-ob-${user.email}`, '1')
+        }
         const onboardingDone = user.onboardingDone || savedOb
         login({ ...user, onboardingDone }, token)
         toast.success(`Bienvenido, ${user.name}!`)
