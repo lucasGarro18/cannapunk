@@ -44,7 +44,7 @@ export default function WalletPage() {
     user?.payoutMp    && { id: 'mercado', label: 'Mercado Pago',   sub: user.payoutMp,    emoji: '💙' },
     user?.payoutUsdt  && { id: 'crypto',  label: 'USDT (Polygon)', sub: user.payoutUsdt,  emoji: '🔷' },
   ].filter(Boolean)
-  const balance      = data?.paidOut      ?? data?.balance      ?? 0
+  const balance      = data?.balance      ?? data?.paidOut      ?? 0
   const pending      = data?.pendingPayout ?? data?.pending     ?? 0
   const totalEarned  = data?.totalEarned                        ?? 0
   const transactions = data?.transactions ?? (data?.recentCommissions ?? []).map(c => ({

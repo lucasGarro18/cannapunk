@@ -17,7 +17,7 @@ const MONTHLY_GOAL = 100000
 export default function EarningsPage() {
   const { data, isLoading, isError, refetch } = useWallet()
   const totalEarned  = data?.totalEarned                        ?? 0
-  const balance      = data?.paidOut     ?? data?.balance       ?? 0
+  const balance      = data?.balance      ?? data?.paidOut      ?? 0
   const pending      = data?.pendingPayout ?? data?.pending     ?? 0
   const monthEarned  = data?.monthEarned                        ?? 0
   const topVideos    = data?.topVideos                          ?? []

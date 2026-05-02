@@ -4,6 +4,8 @@ const { requireAuth } = require('../middleware/auth')
 const { fixUser }     = require('../sqlite')
 const { notify }      = require('../notify')
 
+const ARS = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
+
 function requireAdmin(req, res, next) {
   if (!req.user?.roles?.includes('admin')) {
     return res.status(403).json({ error: 'Acceso restringido a administradores' })
@@ -100,15 +102,19 @@ router.get('/commissions', ...guard, async (req, res) => {
 
 // PATCH /api/admin/commissions/:id/pay
 router.patch('/commissions/:id/pay', ...guard, async (req, res) => {
+  const existing = await prisma.commission.findUnique({ where: { id: req.params.id } })
+  if (!existing) return res.status(404).json({ error: 'Comisión no encontrada' })
+  if (existing.status === 'paid') return res.status(400).json({ error: 'Ya estaba pagada' })
+
   const commission = await prisma.commission.update({
     where: { id: req.params.id },
-    data:  { status: 'paid' },
+    data:  { status: 'paid', paidAt: new Date(), paidBy: req.user.id },
   })
   await notify(prisma, {
     userId:    commission.creatorId,
     type:      'commission',
     title:     'Pago acreditado',
-    body:      `Tu comisión de $${commission.amount.toLocaleString('es-AR')} fue acreditada`,
+    body:      `Tu comisión de ${ARS(commission.amount)} fue acreditada a tu balance`,
     actionUrl: '/wallet',
   })
   res.json(commission)
@@ -119,24 +125,28 @@ router.patch('/commissions/pay-all', ...guard, async (req, res) => {
   const { creatorId } = req.body
   if (!creatorId) return res.status(400).json({ error: 'creatorId requerido' })
 
-  const { count } = await prisma.commission.updateMany({
-    where: { creatorId, status: 'pending' },
-    data:  { status: 'paid' },
+  const pending = await prisma.commission.findMany({
+    where:  { creatorId, status: 'pending' },
+    select: { id: true, amount: true },
   })
+  if (pending.length === 0) return res.status(400).json({ error: 'No hay comisiones pendientes' })
 
-  const total = await prisma.commission.aggregate({
-    where: { creatorId, status: 'paid' },
-    _sum:  { amount: true },
+  const totalAmount = pending.reduce((a, c) => a + c.amount, 0)
+  const now         = new Date()
+
+  await prisma.commission.updateMany({
+    where: { id: { in: pending.map(c => c.id) } },
+    data:  { status: 'paid', paidAt: now, paidBy: req.user.id },
   })
 
   await notify(prisma, {
     userId:    creatorId,
     type:      'commission',
     title:     'Pago procesado',
-    body:      `Se procesaron ${count} comisiones por un total de $${(total._sum.amount ?? 0).toLocaleString('es-AR')}`,
+    body:      `${pending.length} comisiones acreditadas por un total de ${ARS(totalAmount)}`,
     actionUrl: '/wallet',
   })
-  res.json({ paid: count })
+  res.json({ paid: pending.length, totalAmount })
 })
 
 // GET /api/admin/orders?status=&page=

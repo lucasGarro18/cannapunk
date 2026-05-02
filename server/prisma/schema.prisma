@@ -119,10 +119,12 @@ model Video {
 }
 
 model Commission {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   amount    Int
-  status    String   @default("pending")
-  createdAt DateTime @default(now())
+  status    String    @default("pending")
+  paidAt    DateTime?
+  paidBy    String?
+  createdAt DateTime  @default(now())
 
   creator   User    @relation(fields: [creatorId], references: [id])
   creatorId String

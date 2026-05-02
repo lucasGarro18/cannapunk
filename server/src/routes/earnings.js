@@ -6,50 +6,68 @@ const { notify }      = require('../notify')
 
 const ARS = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
 
-// GET /api/earnings — resumen de ganancias del creador autenticado
+// GET /api/earnings
 router.get('/', requireAuth, async (req, res) => {
-  const userId = req.user.id
-
-  const now       = new Date()
+  const userId     = req.user.id
+  const now        = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const [allCommissions, pendingCommissions, monthCommissions, orders, videos, withdrawals, withdrawnAgg] = await Promise.all([
-    prisma.commission.findMany({
-      where:   { creatorId: userId },
-      include: { video: { select: { title: true } }, order: { select: { total: true } } },
-      orderBy: { createdAt: 'desc' },
+  const [
+    paidComm,
+    pendingComm,
+    monthComm,
+    allComm,
+    allWithdrawals,
+    completedWithdrawals,
+    videoCount,
+  ] = await Promise.all([
+    // Comisiones ya aprobadas por admin (dinero disponible)
+    prisma.commission.aggregate({
+      where: { creatorId: userId, status: 'paid' },
+      _sum:  { amount: true },
     }),
+    // Comisiones pendientes (esperando aprobación admin)
     prisma.commission.aggregate({
       where: { creatorId: userId, status: 'pending' },
       _sum:  { amount: true },
     }),
+    // Comisiones de este mes (excluye canceladas)
     prisma.commission.aggregate({
-      where: { creatorId: userId, createdAt: { gte: monthStart } },
+      where: { creatorId: userId, status: { in: ['paid', 'pending'] }, createdAt: { gte: monthStart } },
       _sum:  { amount: true },
     }),
-    prisma.order.count({ where: { buyerId: userId } }),
-    prisma.video.count({ where: { creatorId: userId } }),
-    prisma.withdrawal.findMany({
-      where:   { userId },
+    // Todas las comisiones para historial y top videos
+    prisma.commission.findMany({
+      where:   { creatorId: userId, status: { in: ['paid', 'pending'] } },
+      include: { video: { select: { title: true } } },
       orderBy: { createdAt: 'desc' },
     }),
+    // Todos los retiros solicitados (reducen balance disponible)
     prisma.withdrawal.aggregate({
       where: { userId },
       _sum:  { amount: true },
     }),
+    // Retiros completados (referencia histórica)
+    prisma.withdrawal.aggregate({
+      where: { userId, status: 'completed' },
+      _sum:  { amount: true },
+    }),
+    prisma.video.count({ where: { creatorId: userId } }),
   ])
 
-  const totalEarned   = allCommissions.reduce((a, c) => a + c.amount, 0)
-  const pendingPayout = pendingCommissions._sum.amount ?? 0
-  const totalWithdrawn = withdrawnAgg._sum.amount ?? 0
-  const paidOut       = Math.max(0, totalEarned - pendingPayout - totalWithdrawn)
-  const monthEarned   = monthCommissions._sum.amount ?? 0
+  const paidEarned     = paidComm._sum.amount          ?? 0
+  const pendingPayout  = pendingComm._sum.amount        ?? 0
+  const monthEarned    = monthComm._sum.amount          ?? 0
+  const totalEarned    = paidEarned + pendingPayout               // lifetime (exc. canceladas)
+  const totalWithdrawn = allWithdrawals._sum.amount     ?? 0      // todos los retiros solicitados
+  const paidOut        = completedWithdrawals._sum.amount ?? 0    // retiros completados
+  const balance        = Math.max(0, paidEarned - totalWithdrawn) // disponible para retirar
 
-  // Top videos by earnings
+  // Top videos por ganancias
   const videoEarnings = {}
-  for (const c of allCommissions) {
+  for (const c of allComm) {
     const key = c.videoId
-    if (!videoEarnings[key]) videoEarnings[key] = { title: c.video.title, earned: 0, conversions: 0 }
+    if (!videoEarnings[key]) videoEarnings[key] = { title: c.video?.title ?? 'Sin título', earned: 0, conversions: 0 }
     videoEarnings[key].earned      += c.amount
     videoEarnings[key].conversions += 1
   }
@@ -57,13 +75,19 @@ router.get('/', requireAuth, async (req, res) => {
     .sort((a, b) => b.earned - a.earned)
     .slice(0, 5)
 
-  // Merge commissions + withdrawals into unified transaction list
+  // Historial de retiros para el merge
+  const withdrawals = await prisma.withdrawal.findMany({
+    where:   { userId },
+    orderBy: { createdAt: 'desc' },
+  })
+
   const transactions = [
-    ...allCommissions.slice(0, 20).map(c => ({
+    ...allComm.slice(0, 30).map(c => ({
       id:        c.id,
       type:      'commission',
-      label:     c.video.title,
+      label:     c.video?.title ?? 'Comisión',
       amount:    c.amount,
+      status:    c.status,
       date:      new Date(c.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }),
       createdAt: c.createdAt,
     })),
@@ -72,21 +96,21 @@ router.get('/', requireAuth, async (req, res) => {
       type:      'withdrawal',
       label:     `Retiro via ${w.method === 'cbu' ? 'CBU/CVU' : w.method === 'mercado' ? 'Mercado Pago' : 'USDT'}`,
       amount:    -w.amount,
-      date:      new Date(w.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }),
       status:    w.status,
+      date:      new Date(w.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }),
       createdAt: w.createdAt,
     })),
   ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
   res.json({
     totalEarned,
-    pendingPayout,
-    paidOut,
+    balance,           // disponible para retirar = paid commissions - all withdrawals
+    pendingPayout,     // comisiones aún no aprobadas por admin
+    paidOut,           // retiros completados (cashed out)
+    totalWithdrawn,    // total retirado (pending + completed)
     monthEarned,
-    totalOrders:  orders,
-    totalVideos:  videos,
+    totalVideos: videoCount,
     topVideos,
-    recentCommissions: allCommissions.slice(0, 20),
     transactions,
   })
 })
@@ -100,12 +124,22 @@ router.post('/withdraw', requireAuth, async (req, res) => {
 
   const userId = req.user.id
 
-  const { _sum } = await prisma.commission.aggregate({
-    where: { creatorId: userId, status: 'pending' },
-    _sum:  { amount: true },
-  })
-  const available = _sum.amount ?? 0
-  if (amount > available) return res.status(400).json({ error: 'Saldo insuficiente' })
+  // Balance disponible = comisiones pagadas - todos los retiros solicitados
+  const [paidAgg, withdrawnAgg] = await Promise.all([
+    prisma.commission.aggregate({
+      where: { creatorId: userId, status: 'paid' },
+      _sum:  { amount: true },
+    }),
+    prisma.withdrawal.aggregate({
+      where: { userId },
+      _sum:  { amount: true },
+    }),
+  ])
+
+  const available = Math.max(0, (paidAgg._sum.amount ?? 0) - (withdrawnAgg._sum.amount ?? 0))
+  if (amount > available) {
+    return res.status(400).json({ error: `Saldo insuficiente. Disponible: ${ARS(available)}` })
+  }
 
   const withdrawal = await prisma.withdrawal.create({
     data: { userId, amount, method, status: 'pending' },

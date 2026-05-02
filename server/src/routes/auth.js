@@ -131,6 +131,26 @@ router.patch('/me', requireAuth, async (req, res) => {
 
   if (data.roles) data.roles = serializeRoles(data.roles)
 
+  // Validación de métodos de cobro
+  if (data.payoutCbu && data.payoutCbu.trim() !== '') {
+    if (!/^\d{22}$/.test(data.payoutCbu.replace(/\s/g, '')))
+      return res.status(400).json({ error: 'CBU inválido: debe tener 22 dígitos' })
+    data.payoutCbu = data.payoutCbu.replace(/\s/g, '')
+  }
+  if (data.payoutMp && data.payoutMp.trim() !== '') {
+    const val = data.payoutMp.trim()
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)
+    const isAlias = /^[a-z0-9._-]{6,20}$/.test(val)
+    if (!isEmail && !isAlias)
+      return res.status(400).json({ error: 'Mercado Pago inválido: ingresá un email o alias (6-20 caracteres)' })
+    data.payoutMp = val
+  }
+  if (data.payoutUsdt && data.payoutUsdt.trim() !== '') {
+    if (!/^0x[0-9a-fA-F]{40}$/.test(data.payoutUsdt.trim()))
+      return res.status(400).json({ error: 'Wallet USDT inválida: debe ser una dirección Polygon/EVM (0x + 40 hex)' })
+    data.payoutUsdt = data.payoutUsdt.trim()
+  }
+
   const updated = await prisma.user.update({
     where: { id: req.user.id },
     data,
