@@ -74,7 +74,7 @@ router.post('/', requireAuth, async (req, res) => {
   })
   const { items, address, referrerId } = schema.parse(req.body)
 
-  // Fetch products and validate stock
+  // Fetch products para precio y validación de existencia
   const products = await prisma.product.findMany({
     where: { id: { in: items.map(i => i.productId) } },
   })
@@ -83,18 +83,23 @@ router.post('/', requireAuth, async (req, res) => {
   const orderItems = items.map(({ productId, qty }) => {
     const p = products.find(p => p.id === productId)
     if (!p) throw Object.assign(new Error(`Producto ${productId} no encontrado`), { status: 400 })
-    if (p.stock < qty) throw Object.assign(new Error(`Stock insuficiente: ${p.name}`), { status: 400 })
+    if (p.status !== 'active') throw Object.assign(new Error(`"${p.name}" no está disponible`), { status: 400 })
     total += p.price * qty
-    return { productId, qty, unitPrice: p.price }
+    return { productId, qty, unitPrice: p.price, name: p.name }
   })
 
   const order = await prisma.$transaction(async (tx) => {
-    // Decrease stock
-    for (const { productId, qty } of orderItems) {
-      await tx.product.update({
-        where: { id: productId },
-        data:  { stock: { decrement: qty }, salesCount: { increment: qty } },
-      })
+    // Decremento atómico con validación de stock en una sola query
+    // Elimina race conditions: si stock < qty, affected rows = 0 → error
+    for (const { productId, qty, name } of orderItems) {
+      const affected = await tx.$executeRaw`
+        UPDATE "Product"
+        SET stock = stock - ${qty}, "salesCount" = "salesCount" + ${qty}
+        WHERE id = ${productId} AND stock >= ${qty}
+      `
+      if (affected === 0) {
+        throw Object.assign(new Error(`Stock insuficiente: "${name}"`), { status: 400 })
+      }
     }
 
     const created = await tx.order.create({
@@ -103,7 +108,7 @@ router.post('/', requireAuth, async (req, res) => {
         total,
         address: serializeAddress(address),
         referrerId: referrerId || null,
-        items: { create: orderItems },
+        items: { create: orderItems.map(({ productId, qty, unitPrice }) => ({ productId, qty, unitPrice })) },
       },
       include: ORDER_INCLUDE,
     })
